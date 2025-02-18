@@ -28,7 +28,9 @@ function Header({ mode, setMode }) {
           </button>
 
           {open && (
-            <div className="absolute right-0 mt-2 w-24 bg-white shadow-md rounded">
+            <div 
+              className="absolute right-0 mt-2 w-24 bg-white shadow-md rounded z-50"
+            >
               <button
                 onClick={() => handleSelectMode("daily")}
                 className="block w-full text-left px-4 py-2 hover:bg-brandLight"
@@ -50,6 +52,7 @@ function Header({ mode, setMode }) {
 }
 
 export default Header;
+
 
 
 
