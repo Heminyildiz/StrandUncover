@@ -2,18 +2,18 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Body için Lexend font uygulaması */
+/* Body ve genel font */
 body {
-  @apply font-lexend;
+  @apply font-lexend bg-brandLight text-gray-800;
 }
 
-/* Modal arka plan */
+/* Modal */
 .modal-backdrop {
   @apply fixed inset-0 flex items-center justify-center bg-black bg-opacity-50;
 }
-
 .modal-content {
   @apply bg-white p-4 rounded shadow-md;
 }
+
 
 
