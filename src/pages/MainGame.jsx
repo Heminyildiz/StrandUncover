@@ -5,6 +5,7 @@ import HintModal from "../components/HintModal";
 function MainGame() {
   const [mode, setMode] = useState("daily"); 
   // "daily" veya "zen"
+
   const [puzzle, setPuzzle] = useState(null);
   const [foundWords, setFoundWords] = useState([]);
   const [message, setMessage] = useState("");
@@ -13,20 +14,24 @@ function MainGame() {
 
   useEffect(() => {
     loadPuzzle();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode]);
 
   const loadPuzzle = () => {
-    fetch("/puzzleData.json")
-      .then((res) => res.json())
+    fetch("./puzzleData.json") // <-- Önemli: relative path
+      .then((res) => {
+        if (!res.ok) {
+          throw new Error(`Puzzle data fetch failed: ${res.status}`);
+        }
+        return res.json();
+      })
       .then((data) => {
         if (mode === "daily") {
-          // Tek bir daily puzzle var. Tarihe göre
           const today = new Date().toISOString().split("T")[0];
+          // Tarihle eşleşen puzzle bul
           const dailyPuzzle = data.dailyPuzzles.find((p) => p.date === today);
           setPuzzle(dailyPuzzle || data.dailyPuzzles[0]);
         } else {
-          // Zen puzzle. Rastgele seç
+          // Zen puzzle => rastgele bir tane
           const zList = data.zenPuzzles || [];
           if (zList.length > 0) {
             const idx = Math.floor(Math.random() * zList.length);
@@ -38,7 +43,9 @@ function MainGame() {
         setHintOpen(false);
         setPartialWord("");
       })
-      .catch((err) => console.error(err));
+      .catch((err) => {
+        console.error("Puzzle fetch error:", err);
+      });
   };
 
   const handleSwitchDaily = () => {
@@ -66,10 +73,10 @@ function MainGame() {
     );
   }
 
-  const totalWords = puzzle.words.length;
+  const totalWords = puzzle.words?.length || 0;
   const allFound = foundWords.length === totalWords;
-
-  const showHintButton = mode === "daily" && !allFound; // Sadece daily modda hint
+  // Daily modda hint, eğer puzzle varsa ve tüm kelimeler bulunmadıysa göster
+  const showHintButton = (mode === "daily" && puzzle.hint && !allFound);
 
   return (
     <div className="container mx-auto p-4 flex flex-col items-center">
@@ -100,7 +107,7 @@ function MainGame() {
       {/* Harf Izgarası */}
       <WordGrid
         grid={puzzle.grid}
-        words={puzzle.words}
+        words={puzzle.words || []}
         onWordFound={handleWordFound}
         onPartialWordChange={setPartialWord}
       />
@@ -124,8 +131,8 @@ function MainGame() {
         )}
       </div>
 
-      {/* Hint Modal (Daily) */}
-      {mode === "daily" && (
+      {/* Hint Modal (Sadece daily modda) */}
+      {mode === "daily" && puzzle.hint && (
         <HintModal
           isOpen={hintOpen}
           hint={puzzle.hint}
@@ -137,3 +144,4 @@ function MainGame() {
 }
 
 export default MainGame;
+
