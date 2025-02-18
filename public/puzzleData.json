@@ -3,7 +3,7 @@
     {
       "date": "2025-02-18",
       "themeTitle": "Accidents",
-      "hint": "All these words are related to unexpected mishaps.",
+      "hint": "All these words are about unexpected mishaps.",
       "grid": [
         ["C","R","A","S","H",""],
         ["","","F","A","L","L"],
@@ -71,6 +71,7 @@
     }
   ]
 }
+
 
 
 
