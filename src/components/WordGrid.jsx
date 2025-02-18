@@ -2,18 +2,13 @@ import React, { useEffect, useState, useRef } from "react";
 
 const ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
-function isStraightLine(path) {
-  if (path.length < 2) return true; 
-  const rowDiff = path[1].row - path[0].row;
-  const colDiff = path[1].col - path[0].col;
-  for (let i = 2; i < path.length; i++) {
-    const rDiff = path[i].row - path[i - 1].row;
-    const cDiff = path[i].col - path[i - 1].col;
-    if (rDiff !== rowDiff || cDiff !== colDiff) {
-      return false;
-    }
-  }
-  return true;
+// path içindeki hücreler düz çizgi zorunluluğu yok, 
+// sadece bitişik hücreleri ekleyebiliyoruz (8 yön).
+function isNeighbor(last, next) {
+  // Farklar -1,0,+1 aralığında olmalı
+  const rowDiff = Math.abs(next.row - last.row);
+  const colDiff = Math.abs(next.col - last.col);
+  return rowDiff <= 1 && colDiff <= 1 && !(rowDiff === 0 && colDiff === 0);
 }
 
 function buildStringFromPath(path, grid) {
@@ -23,20 +18,15 @@ function buildStringFromPath(path, grid) {
 function WordGrid({
   grid: initialGrid,
   words,
-  foundWords,
   onWordFound,
   onPartialWordChange
 }) {
   const [grid, setGrid] = useState([]);
   const [selectedPath, setSelectedPath] = useState([]);
-  const [usedCells, setUsedCells] = useState([]); // hücreler tekrar kullanılamaz
   const [warning, setWarning] = useState("");
-  const [pointerDown, setPointerDown] = useState(false);
+  const pointerDownRef = useRef(false);
 
-  // Container ref
-  const containerRef = useRef(null);
-
-  // Grid'i boş hücrelere random harflerle doldur
+  // Boş hücrelere rastgele harf
   useEffect(() => {
     const filled = initialGrid.map((row) =>
       row.map((cell) => {
@@ -47,18 +37,19 @@ function WordGrid({
       })
     );
     setGrid(filled);
+    setSelectedPath([]);
   }, [initialGrid]);
 
-  // Seçili path değiştiğinde partialWord güncelle
+  // path değişince partialWord güncelle
   useEffect(() => {
-    if (!selectedPath.length) {
+    if (selectedPath.length === 0) {
       onPartialWordChange?.("");
       return;
     }
     const partial = buildStringFromPath(selectedPath, grid);
     onPartialWordChange?.(partial);
 
-    // 10 karakteri aşıyor mu?
+    // 10 sınır
     if (selectedPath.length > 10) {
       setWarning("Too long!");
       setTimeout(() => {
@@ -69,69 +60,61 @@ function WordGrid({
   }, [selectedPath, grid, onPartialWordChange]);
 
   const handlePointerDown = (e) => {
-    e.preventDefault(); 
-    setPointerDown(true);
+    e.preventDefault();
+    pointerDownRef.current = true;
     setSelectedPath([]);
   };
 
   const handlePointerUp = (e) => {
     e.preventDefault();
-    setPointerDown(false);
+    pointerDownRef.current = false;
 
     if (selectedPath.length > 0 && selectedPath.length <= 10) {
-      if (isStraightLine(selectedPath)) {
-        const selectedWord = buildStringFromPath(selectedPath, grid);
-        const reversed = selectedWord.split("").reverse().join("");
-        // Bulmacadaki kelimelerden biri mi?
-        const match = words.find(
-          (w) => w.toUpperCase() === selectedWord || w.toUpperCase() === reversed
-        );
-        if (match) {
-          onWordFound(match.toUpperCase());
-          // Kullanılan hücreleri kitliyoruz
-          lockUsedCells(selectedPath);
-        }
+      // Tamamlanan kelime puzzle words içinde mi?
+      const selectedWord = buildStringFromPath(selectedPath, grid);
+      const reversed = selectedWord.split("").reverse().join("");
+
+      const found = words.find(
+        (w) => w.toUpperCase() === selectedWord || w.toUpperCase() === reversed
+      );
+      if (found) {
+        onWordFound?.(found.toUpperCase());
       }
     }
     resetSelection();
   };
 
   const handlePointerMove = (e) => {
-    if (!pointerDown) return;
+    if (!pointerDownRef.current) return;
     e.preventDefault();
 
-    // Hücrenin row/col'unu dataset'ten al
     const target = e.target;
-    if (!target.dataset || target.dataset.row === undefined) return;
+    if (!target.dataset.row) return;
 
     const row = parseInt(target.dataset.row, 10);
     const col = parseInt(target.dataset.col, 10);
 
-    // Kullanılmış hücreyse ekleme
-    if (isUsedCell(row, col)) return;
+    // Aynı hücre path'te var mı?
+    const alreadyInPath = selectedPath.some((p) => p.row === row && p.col === col);
+    if (alreadyInPath) return;
 
-    // Zaten pathte varsa ekleme
-    const already = selectedPath.some((p) => p.row === row && p.col === col);
-    if (already) return;
-
-    // 10 sınırını aşmıyorsak ekle
-    if (selectedPath.length < 10) {
-      setSelectedPath((prev) => [...prev, { row, col }]);
+    // path boşsa direkt ekle
+    if (selectedPath.length === 0) {
+      setSelectedPath([{ row, col }]);
+    } else {
+      // Son seçili harfe bitişik mi?
+      const lastCell = selectedPath[selectedPath.length - 1];
+      if (isNeighbor(lastCell, { row, col })) {
+        if (selectedPath.length < 10) {
+          setSelectedPath((prev) => [...prev, { row, col }]);
+        }
+      }
     }
   };
 
   const resetSelection = () => {
     setSelectedPath([]);
     onPartialWordChange?.("");
-  };
-
-  const lockUsedCells = (path) => {
-    const pathKeys = path.map((p) => `${p.row},${p.col}`);
-    setUsedCells((prev) => [...prev, ...pathKeys]);
-  };
-
-  const isUsedCell = (row, col) => {
-    return usedCells.includes(`${row},${col}`);
   };
 
   return (
@@ -142,45 +125,37 @@ function WordGrid({
         </div>
       )}
 
-      {/* Grid Container */}
       <div
-        ref={containerRef}
         className="grid grid-rows-7 grid-cols-6 gap-1 p-1"
-        style={{
-          touchAction: "none"
-        }}
+        style={{ touchAction: "none" }}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
       >
         {grid.map((rowArray, rowIndex) =>
           rowArray.map((letter, colIndex) => {
-            const cellKey = `${rowIndex},${colIndex}`;
-
-            // Seçili path'te mi?
             const isSelected = selectedPath.some(
               (p) => p.row === rowIndex && p.col === colIndex
             );
-            // Kullanılmış mı?
-            const locked = isUsedCell(rowIndex, colIndex);
 
-            // Stiller
-            let cellClass = "w-12 h-12 md:w-14 md:h-14 flex items-center justify-center text-lg md:text-xl font-bold cursor-pointer select-none";
-            if (locked) {
-              cellClass += " bg-gray-300 text-gray-500";
-            } else if (isSelected) {
-              // Gradient arka plan + hafif border efekti
-              cellClass += " bg-gradient-to-r from-brandGradientFrom to-brandGradientTo text-white rounded-full border-2 border-brandAccent";
-            } else {
-              cellClass += " bg-white text-gray-900";
-            }
+            const cellClasses = `
+              w-12 h-12 md:w-14 md:h-14 
+              flex items-center justify-center 
+              text-lg md:text-xl font-bold 
+              cursor-pointer select-none
+              ${
+                isSelected
+                  ? "bg-[#bfdc80] text-black"
+                  : "bg-white text-gray-900"
+              }
+            `;
 
             return (
               <div
-                key={cellKey}
+                key={`${rowIndex},${colIndex}`}
                 data-row={rowIndex}
                 data-col={colIndex}
-                className={cellClass}
+                className={cellClasses}
               >
                 {letter}
               </div>
@@ -193,6 +168,7 @@ function WordGrid({
 }
 
 export default WordGrid;
+
 
 
 
