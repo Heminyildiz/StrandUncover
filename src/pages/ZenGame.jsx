@@ -3,7 +3,7 @@ import WordGrid from "../components/WordGrid";
 
 function ZenGame() {
   const [puzzles, setPuzzles] = useState([]);
-  const [current, setCurrent] = useState(null);
+  const [currentPuzzle, setCurrentPuzzle] = useState(null);
   const [foundWords, setFoundWords] = useState([]);
   const [message, setMessage] = useState("");
 
@@ -18,7 +18,7 @@ function ZenGame() {
       .catch((err) => console.error(err));
   }, []);
 
-  // zenPuzzles yüklendiğinde rastgele puzzle seç
+  // puzzles yüklendiğinde rastgele puzzle seç
   useEffect(() => {
     if (puzzles.length > 0) {
       loadRandomPuzzle();
@@ -26,8 +26,8 @@ function ZenGame() {
   }, [puzzles]);
 
   const loadRandomPuzzle = () => {
-    const index = Math.floor(Math.random() * puzzles.length);
-    setCurrent(puzzles[index]);
+    const idx = Math.floor(Math.random() * puzzles.length);
+    setCurrentPuzzle(puzzles[idx]);
     setFoundWords([]);
     setMessage("");
   };
@@ -41,29 +41,28 @@ function ZenGame() {
     setMessage(`Found "${word}"!`);
   };
 
-  if (!current) {
+  if (!currentPuzzle) {
     return (
-      <div className="container mx-auto p-4 text-center">
-        <p>Loading Zen puzzle...</p>
+      <div className="flex items-center justify-center h-full p-6">
+        <p>Loading zen puzzle...</p>
       </div>
     );
   }
 
-  const totalWords = current.words.length;
-  const remaining = totalWords - foundWords.length;
-  const allFound = remaining === 0;
+  const total = currentPuzzle.words.length;
+  const foundCount = foundWords.length;
+  const allFound = foundCount === total;
 
   return (
-    <main className="container mx-auto p-4 text-center flex flex-col items-center gap-4">
+    <main className="container mx-auto p-4 flex flex-col items-center gap-4">
       <h2 className="text-xl font-bold">Zen Puzzle</h2>
       <p className="text-sm text-gray-500">
-        Find all words! Then grab a new puzzle.
+        Find all words. Then load a new puzzle!
       </p>
 
-      {/* Harf Izgarası */}
       <WordGrid
-        grid={current.grid}
-        words={current.words}
+        grid={currentPuzzle.grid}
+        words={currentPuzzle.words}
         foundWords={foundWords}
         onWordFound={handleWordFound}
       />
@@ -73,18 +72,18 @@ function ZenGame() {
       {allFound ? (
         <div className="bg-green-100 px-4 py-2 rounded">
           <p className="text-green-700 font-semibold">
-            All words found! Get a new puzzle:
+            All words found! Load another puzzle:
           </p>
           <button
             onClick={loadRandomPuzzle}
-            className="mt-2 px-4 py-1 bg-pastel-200 rounded hover:bg-pastel-300 transition"
+            className="mt-2 px-4 py-1 bg-pastel-200 rounded hover:bg-pastel-300"
           >
             Next Puzzle
           </button>
         </div>
       ) : (
-        <p className="text-lg">
-          {foundWords.length} of {totalWords} found.
+        <p className="text-lg font-medium">
+          {foundCount} / {total}
         </p>
       )}
     </main>
@@ -92,4 +91,5 @@ function ZenGame() {
 }
 
 export default ZenGame;
+
 
