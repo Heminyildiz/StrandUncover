@@ -1,36 +1,45 @@
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 
 function Header() {
   const [open, setOpen] = useState(false);
+  const location = useLocation();
+
+  // Hangi moddayız?
+  let currentMode = "Daily";
+  if (location.pathname.includes("/zen")) {
+    currentMode = "Zen";
+  }
 
   const toggleDropdown = () => setOpen(!open);
   const closeDropdown = () => setOpen(false);
 
   return (
-    <header className="bg-pastel-100 p-4 shadow-sm">
+    <header className="bg-white p-4 shadow-sm">
       <nav className="container mx-auto flex items-center justify-between relative">
-        <div className="text-xl font-bold">STRANDS CLONE</div>
+        <h1 className="text-xl font-bold text-brandPrimary">
+          Strand Uncover
+        </h1>
         <div className="relative">
           <button
             onClick={toggleDropdown}
-            className="px-3 py-1 bg-pastel-200 rounded hover:bg-pastel-300 transition"
+            className="px-3 py-1 rounded bg-brandPrimary text-white hover:bg-brandSecondary transition"
           >
-            Game Mode
+            {currentMode}
           </button>
           {open && (
             <div className="absolute right-0 mt-2 w-32 bg-white shadow-lg rounded">
               <Link
                 to="/daily"
                 onClick={closeDropdown}
-                className="block px-4 py-2 hover:bg-pastel-100"
+                className="block px-4 py-2 hover:bg-brandLight"
               >
                 Daily
               </Link>
               <Link
                 to="/zen"
                 onClick={closeDropdown}
-                className="block px-4 py-2 hover:bg-pastel-100"
+                className="block px-4 py-2 hover:bg-brandLight"
               >
                 Zen
               </Link>
@@ -43,5 +52,6 @@ function Header() {
 }
 
 export default Header;
+
 
 
