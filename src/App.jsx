@@ -7,16 +7,18 @@ import Header from "./components/Header";
 
 function App() {
   return (
-    <div className="min-h-screen text-gray-700">
-      {/* Üstte sabit Header */}
+    <div className="min-h-screen flex flex-col">
       <Header />
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/daily" element={<DailyGame />} />
-        <Route path="/zen" element={<ZenGame />} />
-      </Routes>
+      <div className="flex-1">
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/daily" element={<DailyGame />} />
+          <Route path="/zen" element={<ZenGame />} />
+        </Routes>
+      </div>
     </div>
   );
 }
 
 export default App;
+
