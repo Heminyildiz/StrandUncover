@@ -9,19 +9,19 @@ function DailyGame() {
   const [message, setMessage] = useState("");
   const [partialWord, setPartialWord] = useState("");
 
-  const today = new Date().toISOString().split("T")[0]; // or example "2025-02-18"
+  // Bugünün tarihi
+  const today = new Date().toISOString().split("T")[0];
 
   useEffect(() => {
     fetch("/puzzleData.json")
       .then((res) => res.json())
       .then((data) => {
         if (!data.dailyPuzzles) return;
-        // Bugünün puzzle'ı
         const puzzleOfTheDay = data.dailyPuzzles.find((p) => p.date === today);
         if (puzzleOfTheDay) {
           setPuzzle(puzzleOfTheDay);
         } else {
-          // fallback: ilk puzzle
+          // fallback
           setPuzzle(data.dailyPuzzles[0]);
         }
       })
@@ -78,8 +78,7 @@ function DailyGame() {
 
       {/* Sağ kısım: Izgara ve partial word */}
       <div className="relative flex flex-col items-center">
-        {/* Seçilen harflerden oluşan kelime */}
-        <div className="mb-2 text-brandSecondary font-bold text-xl h-6">
+        <div className="mb-2 text-brandSecondary font-bold text-lg h-6">
           {partialWord}
         </div>
 
@@ -98,7 +97,6 @@ function DailyGame() {
         )}
       </div>
 
-      {/* Hint Modal */}
       <HintModal
         isOpen={hintOpen}
         hint={puzzle.hint}
@@ -109,6 +107,7 @@ function DailyGame() {
 }
 
 export default DailyGame;
+
 
 
 
