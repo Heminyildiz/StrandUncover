@@ -1,5 +1,5 @@
 {
-  "name": "strands-clone",
+  "name": "strand-uncover",
   "version": "1.0.0",
   "private": true,
   "scripts": {
@@ -19,5 +19,6 @@
     "vite": "^4.0.0"
   }
 }
+
 
 
