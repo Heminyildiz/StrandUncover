@@ -4,7 +4,7 @@
 
 /* Body ve genel font */
 body {
-  @apply font-lexend bg-brandLight text-gray-800;
+  @apply font-comfortaa bg-brandLight text-gray-800;
 }
 
 /* Modal */
@@ -14,6 +14,7 @@ body {
 .modal-content {
   @apply bg-white p-4 rounded shadow-md;
 }
+
 
 
 
