@@ -1,0 +1,33 @@
+{
+  "dailyPuzzles": [
+    {
+      "date": "2025-02-18",
+      "themeTitle": "Fruits",
+      "hint": "All are sweet or sour delicacies!",
+      "words": ["APPLE", "BANANA", "CHERRY", "GRAPE", "PEACH"]
+    },
+    {
+      "date": "2025-02-19",
+      "themeTitle": "Animals",
+      "hint": "They roam in the wild or live with us!",
+      "words": ["LION", "TIGER", "CAT", "DOG", "MOUSE"]
+    },
+    {
+      "date": "2025-02-20",
+      "themeTitle": "Colors",
+      "hint": "They paint our world!",
+      "words": ["RED", "BLUE", "GREEN", "YELLOW", "WHITE"]
+    }
+  ],
+  "zenPuzzles": [
+    {
+      "words": ["CAR", "TRAIN", "PLANE", "SHIP", "BIKE"]
+    },
+    {
+      "words": ["CITY", "TOWN", "HOUSE", "ROAD", "BRIDGE"]
+    },
+    {
+      "words": ["VIOLET", "ROSE", "IRIS", "LILY", "TULIP"]
+    }
+  ]
+}
