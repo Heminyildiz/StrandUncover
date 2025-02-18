@@ -2,7 +2,6 @@ import React, { useEffect, useState, useRef } from "react";
 
 const ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
-/** path içindeki hücreler tek bir düz çizgi oluşturuyor mu (yatay, dikey, çapraz)? */
 function isStraightLine(path) {
   if (path.length < 2) return true; 
   const rowDiff = path[1].row - path[0].row;
@@ -18,7 +17,7 @@ function isStraightLine(path) {
 }
 
 function buildStringFromPath(path, grid) {
-  return path.map(({ row, col }) => grid[row][col]).join("");
+  return path.map((p) => grid[p.row][p.col]).join("");
 }
 
 function WordGrid({
@@ -26,16 +25,19 @@ function WordGrid({
   words,
   foundWords,
   onWordFound,
-  onPartialWordChange,
+  onPartialWordChange
 }) {
   const [grid, setGrid] = useState([]);
   const [selectedPath, setSelectedPath] = useState([]);
-  const [usedCells, setUsedCells] = useState([]); // Hücreleri tekrar kullanılamaz kıl
-  const isPointerDown = useRef(false);
+  const [usedCells, setUsedCells] = useState([]); // hücreler tekrar kullanılamaz
   const [warning, setWarning] = useState("");
+  const [pointerDown, setPointerDown] = useState(false);
 
+  // Container ref
+  const containerRef = useRef(null);
+
+  // Grid'i boş hücrelere random harflerle doldur
   useEffect(() => {
-    // Boş hücreleri rastgele harfle doldur
     const filled = initialGrid.map((row) =>
       row.map((cell) => {
         if (!cell || cell.trim() === "") {
@@ -47,7 +49,7 @@ function WordGrid({
     setGrid(filled);
   }, [initialGrid]);
 
-  // Seçili path değiştikçe partialWord güncelle
+  // Seçili path değiştiğinde partialWord güncelle
   useEffect(() => {
     if (!selectedPath.length) {
       onPartialWordChange?.("");
@@ -56,7 +58,7 @@ function WordGrid({
     const partial = buildStringFromPath(selectedPath, grid);
     onPartialWordChange?.(partial);
 
-    // 10 karakter sınırı
+    // 10 karakteri aşıyor mu?
     if (selectedPath.length > 10) {
       setWarning("Too long!");
       setTimeout(() => {
@@ -66,54 +68,27 @@ function WordGrid({
     }
   }, [selectedPath, grid, onPartialWordChange]);
 
-  /** Yeni kelime bulunduğunda, path'teki hücreleri usedCells'e ekle */
-  const lockUsedCells = (path) => {
-    setUsedCells((prev) => [
-      ...prev,
-      ...path.map((p) => `${p.row},${p.col}`)
-    ]);
+  const handlePointerDown = (e) => {
+    e.preventDefault(); 
+    setPointerDown(true);
+    setSelectedPath([]);
   };
 
-  // pointerDown => path başlat
-  const handlePointerDown = (row, col, e) => {
+  const handlePointerUp = (e) => {
     e.preventDefault();
-    e.stopPropagation();
-    if (isUsedCell(row, col)) return; // Kullanılmış hücreye izin yok
-    isPointerDown.current = true;
-    setSelectedPath([{ row, col }]);
-  };
+    setPointerDown(false);
 
-  // pointerEnter => path'e ekle
-  const handlePointerEnter = (row, col, e) => {
-    if (!isPointerDown.current) return;
-    e.preventDefault();
-    e.stopPropagation();
-
-    if (isUsedCell(row, col)) return; // Daha önce kullanılmışsa eklemeyelim
-
-    // Aynı hücreyi path'e tekrar eklemeyelim
-    const isAlreadyInPath = selectedPath.some(
-      (p) => p.row === row && p.col === col
-    );
-    if (!isAlreadyInPath && selectedPath.length <= 10) {
-      setSelectedPath((prev) => [...prev, { row, col }]);
-    }
-  };
-
-  // pointerUp => path değerlendir
-  const handlePointerUp = () => {
     if (selectedPath.length > 0 && selectedPath.length <= 10) {
       if (isStraightLine(selectedPath)) {
         const selectedWord = buildStringFromPath(selectedPath, grid);
         const reversed = selectedWord.split("").reverse().join("");
-
-        // words listesinde var mı?
+        // Bulmacadaki kelimelerden biri mi?
         const match = words.find(
           (w) => w.toUpperCase() === selectedWord || w.toUpperCase() === reversed
         );
         if (match) {
           onWordFound(match.toUpperCase());
-          // Bulunan kelimenin hücrelerini bir daha kullanılmaz yap
+          // Kullanılan hücreleri kitliyoruz
           lockUsedCells(selectedPath);
         }
       }
@@ -121,17 +96,38 @@ function WordGrid({
     resetSelection();
   };
 
+  const handlePointerMove = (e) => {
+    if (!pointerDown) return;
+    e.preventDefault();
+
+    // Hücrenin row/col'unu dataset'ten al
+    const target = e.target;
+    if (!target.dataset || target.dataset.row === undefined) return;
+
+    const row = parseInt(target.dataset.row, 10);
+    const col = parseInt(target.dataset.col, 10);
+
+    // Kullanılmış hücreyse ekleme
+    if (isUsedCell(row, col)) return;
+
+    // Zaten pathte varsa ekleme
+    const already = selectedPath.some((p) => p.row === row && p.col === col);
+    if (already) return;
+
+    // 10 sınırını aşmıyorsak ekle
+    if (selectedPath.length < 10) {
+      setSelectedPath((prev) => [...prev, { row, col }]);
+    }
+  };
+
   const resetSelection = () => {
     setSelectedPath([]);
-    isPointerDown.current = false;
     onPartialWordChange?.("");
   };
 
-  // pointerLeave => parmak/kursor ızgaradan çıkarsa da up olayı
-  const handlePointerLeave = () => {
-    if (isPointerDown.current) {
-      handlePointerUp();
-    }
+  const lockUsedCells = (path) => {
+    const pathKeys = path.map((p) => `${p.row},${p.col}`);
+    setUsedCells((prev) => [...prev, ...pathKeys]);
   };
 
   const isUsedCell = (row, col) => {
@@ -139,58 +135,65 @@ function WordGrid({
   };
 
   return (
-    <div
-      className="inline-block select-none relative"
-      style={{ touchAction: "none" }} 
-      onPointerUp={handlePointerUp}
-      onPointerCancel={handlePointerUp}
-      onPointerLeave={handlePointerLeave}
-    >
+    <div className="relative w-full flex justify-center mt-4">
       {warning && (
-        <div className="absolute top-0 left-1/2 transform -translate-x-1/2 bg-brandRed text-white px-2 py-1 rounded">
+        <div className="absolute top-0 bg-brandRed text-white px-2 py-1 rounded">
           {warning}
         </div>
       )}
 
-      {grid.map((rowArray, rowIndex) => (
-        <div key={rowIndex} className="flex">
-          {rowArray.map((letter, colIndex) => {
-            // Seçili path içinde mi?
+      {/* Grid Container */}
+      <div
+        ref={containerRef}
+        className="grid grid-rows-7 grid-cols-6 gap-1 p-1"
+        style={{
+          touchAction: "none"
+        }}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+      >
+        {grid.map((rowArray, rowIndex) =>
+          rowArray.map((letter, colIndex) => {
+            const cellKey = `${rowIndex},${colIndex}`;
+
+            // Seçili path'te mi?
             const isSelected = selectedPath.some(
               (p) => p.row === rowIndex && p.col === colIndex
             );
             // Kullanılmış mı?
-            const isLocked = isUsedCell(rowIndex, colIndex);
+            const locked = isUsedCell(rowIndex, colIndex);
+
+            // Stiller
+            let cellClass = "w-12 h-12 md:w-14 md:h-14 flex items-center justify-center text-lg md:text-xl font-bold cursor-pointer select-none";
+            if (locked) {
+              cellClass += " bg-gray-300 text-gray-500";
+            } else if (isSelected) {
+              // Gradient arka plan + hafif border efekti
+              cellClass += " bg-gradient-to-r from-brandGradientFrom to-brandGradientTo text-white rounded-full border-2 border-brandAccent";
+            } else {
+              cellClass += " bg-white text-gray-900";
+            }
 
             return (
               <div
-                key={colIndex}
-                onPointerDown={(e) => handlePointerDown(rowIndex, colIndex, e)}
-                onPointerEnter={(e) => handlePointerEnter(rowIndex, colIndex, e)}
-                className={`
-                  w-8 h-8 md:w-9 md:h-9 
-                  flex items-center justify-center 
-                  text-sm md:text-base lg:text-lg font-bold cursor-pointer mx-[1px] my-[1px]
-                  ${
-                    isLocked
-                      ? "bg-gray-300 text-gray-500"
-                      : isSelected
-                      ? "bg-brandAccent text-white rounded-full border-2 border-brandSecondary"
-                      : "bg-transparent text-gray-900"
-                  }
-                `}
+                key={cellKey}
+                data-row={rowIndex}
+                data-col={colIndex}
+                className={cellClass}
               >
                 {letter}
               </div>
             );
-          })}
-        </div>
-      ))}
+          })
+        )}
+      </div>
     </div>
   );
 }
 
 export default WordGrid;
+
 
 
 
