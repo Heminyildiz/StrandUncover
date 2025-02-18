@@ -2,24 +2,20 @@
 module.exports = {
   content: [
     "./index.html",
-    "./src/**/*.{js,jsx}",
+    "./src/**/*.{js,jsx}"
   ],
   theme: {
     extend: {
       colors: {
         // Pastel renkler
-        "pastel-50": "#fefcfb",
-        "pastel-100": "#fcf7f2",
-        "pastel-200": "#f9efe5",
-        "pastel-300": "#f4e3d4",
-        "pastel-400": "#eedac6",
-        "pastel-500": "#e6cdb3",
-        "pastel-600": "#ddbfa1",
-        "pastel-700": "#d2ae8c",
-        "pastel-800": "#c79d78",
-        "pastel-900": "#b78259",
-      },
+        "pastel-100": "#E3F2FD",
+        "pastel-200": "#FFF9C4",
+        "pastel-300": "#FFE0B2",
+        "pastel-400": "#FFCDD2",
+        "pastel-500": "#D1C4E9",
+      }
     },
   },
   plugins: [],
 };
+
