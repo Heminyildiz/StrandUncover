@@ -1,48 +1,46 @@
 import React, { useState } from "react";
-import { Link, useLocation } from "react-router-dom";
 
-function Header() {
+function Header({ mode, setMode }) {
   const [open, setOpen] = useState(false);
-  const location = useLocation();
 
-  // Hangi moddaysak onu göster
-  let currentMode = "Daily";
-  if (location.pathname.includes("/zen")) {
-    currentMode = "Zen";
-  }
+  const handleToggleDropdown = () => {
+    setOpen(!open);
+  };
 
-  const toggleDropdown = () => setOpen(!open);
-  const closeDropdown = () => setOpen(false);
+  const handleSelectMode = (selectedMode) => {
+    setMode(selectedMode);
+    setOpen(false);
+  };
 
   return (
-    <header className="bg-white p-4 shadow-sm">
-      <nav className="container mx-auto flex items-center justify-between relative">
-        <h1 className="text-xl font-bold text-brandPrimary">
-          Strand Uncover
-        </h1>
+    <header className="bg-white p-4 shadow-sm w-full">
+      <nav className="flex items-center justify-between container mx-auto relative">
+        {/* Sol taraf: logo veya başlık */}
+        <h1 className="text-xl font-bold text-brandPrimary">Strand Uncover</h1>
+
+        {/* Sağ taraf: drop-down */}
         <div className="relative">
           <button
-            onClick={toggleDropdown}
+            onClick={handleToggleDropdown}
             className="px-3 py-1 rounded bg-brandPrimary text-white hover:bg-brandSecondary transition"
           >
-            {currentMode}
+            {mode === "daily" ? "Daily" : "Zen"}
           </button>
+
           {open && (
-            <div className="absolute right-0 mt-2 w-32 bg-white shadow-lg rounded">
-              <Link
-                to="/daily"
-                onClick={closeDropdown}
-                className="block px-4 py-2 hover:bg-brandLight"
+            <div className="absolute right-0 mt-2 w-24 bg-white shadow-md rounded">
+              <button
+                onClick={() => handleSelectMode("daily")}
+                className="block w-full text-left px-4 py-2 hover:bg-brandLight"
               >
                 Daily
-              </Link>
-              <Link
-                to="/zen"
-                onClick={closeDropdown}
-                className="block px-4 py-2 hover:bg-brandLight"
+              </button>
+              <button
+                onClick={() => handleSelectMode("zen")}
+                className="block w-full text-left px-4 py-2 hover:bg-brandLight"
               >
                 Zen
-              </Link>
+              </button>
             </div>
           )}
         </div>
@@ -52,6 +50,7 @@ function Header() {
 }
 
 export default Header;
+
 
 
 
