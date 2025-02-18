@@ -21,3 +21,4 @@ function HintModal({ isOpen, hint, onClose }) {
 
 export default HintModal;
 
+
