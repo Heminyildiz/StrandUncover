@@ -6,6 +6,7 @@ function ZenGame() {
   const [currentPuzzle, setCurrentPuzzle] = useState(null);
   const [foundWords, setFoundWords] = useState([]);
   const [message, setMessage] = useState("");
+  const [partialWord, setPartialWord] = useState("");
 
   useEffect(() => {
     fetch("/puzzleData.json")
@@ -18,7 +19,6 @@ function ZenGame() {
       .catch((err) => console.error(err));
   }, []);
 
-  // puzzles yüklendiğinde rastgele puzzle seç
   useEffect(() => {
     if (puzzles.length > 0) {
       loadRandomPuzzle();
@@ -30,6 +30,7 @@ function ZenGame() {
     setCurrentPuzzle(puzzles[idx]);
     setFoundWords([]);
     setMessage("");
+    setPartialWord("");
   };
 
   const handleWordFound = (word) => {
@@ -37,7 +38,7 @@ function ZenGame() {
       setMessage("Already found!");
       return;
     }
-    setFoundWords((prev) => [...prev, word]);
+    setFoundWords([...foundWords, word]);
     setMessage(`Found "${word}"!`);
   };
 
@@ -55,41 +56,44 @@ function ZenGame() {
 
   return (
     <main className="container mx-auto p-4 flex flex-col items-center gap-4">
-      <h2 className="text-xl font-bold">Zen Puzzle</h2>
+      <h2 className="text-xl font-bold text-brandPrimary">Zen Puzzle</h2>
       <p className="text-sm text-gray-500">
-        Find all words. Then load a new puzzle!
+        Find all words, then load a new puzzle!
       </p>
+
+      {/* Seçilen harflerden oluşan kelime */}
+      <div className="text-brandSecondary font-bold text-xl h-6">
+        {partialWord}
+      </div>
 
       <WordGrid
         grid={currentPuzzle.grid}
         words={currentPuzzle.words}
         foundWords={foundWords}
         onWordFound={handleWordFound}
+        onPartialWordChange={setPartialWord}
       />
 
-      <p className="text-base text-pastel-400 h-6">{message}</p>
+      <p className="text-base text-brandSecondary min-h-[1.5rem]">{message}</p>
 
       {allFound ? (
-        <div className="bg-green-100 px-4 py-2 rounded">
-          <p className="text-green-700 font-semibold">
-            All words found! Load another puzzle:
-          </p>
+        <div className="bg-brandGreen px-4 py-2 rounded text-white font-semibold">
+          <p>All words found! Get another puzzle:</p>
           <button
             onClick={loadRandomPuzzle}
-            className="mt-2 px-4 py-1 bg-pastel-200 rounded hover:bg-pastel-300"
+            className="mt-2 px-4 py-1 bg-white text-brandGreen rounded hover:bg-brandAccent hover:text-white transition"
           >
             Next Puzzle
           </button>
         </div>
       ) : (
-        <p className="text-lg font-medium">
-          {foundCount} / {total}
-        </p>
+        <p className="text-lg font-medium">{foundCount} / {total}</p>
       )}
     </main>
   );
 }
 
 export default ZenGame;
+
 
 
