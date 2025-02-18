@@ -8,8 +8,7 @@ function DailyGame() {
   const [hintOpen, setHintOpen] = useState(false);
   const [message, setMessage] = useState("");
 
-  const today = new Date().toISOString().split("T")[0]; 
-  // Örnek: "2025-02-18"
+  const today = new Date().toISOString().split("T")[0]; // "2025-02-18"
 
   useEffect(() => {
     fetch("/puzzleData.json")
@@ -18,29 +17,30 @@ function DailyGame() {
         if (!data.dailyPuzzles) return;
         const puzzleOfTheDay = data.dailyPuzzles.find((p) => p.date === today);
 
-        // Eğer bugüne ait puzzle yoksa bir tane fallback alalım (veya hata verilebilir)
         if (puzzleOfTheDay) {
           setPuzzle(puzzleOfTheDay);
         } else {
-          setPuzzle(data.dailyPuzzles[0]); 
+          // Eğer bugüne ait puzzle yoksa ilk daily puzzle'ı alalım
+          setPuzzle(data.dailyPuzzles[0]);
         }
       })
       .catch((err) => console.error(err));
   }, [today]);
 
   const handleWordFound = (word) => {
+    // Zaten bulundu mu?
     if (foundWords.includes(word)) {
       setMessage("Already found!");
       return;
     }
-    setFoundWords((prev) => [...prev, word]);
+    setFoundWords([...foundWords, word]);
     setMessage(`Found "${word}"!`);
   };
 
   if (!puzzle) {
     return (
-      <div className="container mx-auto p-4 text-center">
-        <p>Loading today's puzzle...</p>
+      <div className="flex items-center justify-center h-full p-6">
+        <p>Loading daily puzzle...</p>
       </div>
     );
   }
@@ -50,16 +50,16 @@ function DailyGame() {
   const allFound = remaining === 0;
 
   return (
-    <main className="container mx-auto p-4 flex flex-col md:flex-row items-center md:items-start justify-center gap-8">
-      {/* Sol Kısım: Tema, Sayac, Hint */}
+    <main className="container mx-auto p-4 flex flex-col md:flex-row items-start md:items-start gap-8 justify-center">
+      {/* Sol Bilgi Alanı */}
       <div className="flex flex-col items-center md:items-start gap-4">
-        <div className="bg-pastel-100 px-4 py-2 rounded shadow text-center md:text-left">
+        <div className="px-4 py-2 rounded shadow text-center md:text-left bg-pastel-100">
           <p className="text-sm text-gray-500 font-semibold">TODAY’S THEME</p>
           <h2 className="text-xl font-bold">{puzzle.themeTitle}</h2>
         </div>
 
         <p className="text-lg font-medium">
-          {foundWords.length} of {totalWords} theme words found.
+          {foundWords.length} of {totalWords} found.
         </p>
 
         {!allFound && (
@@ -71,27 +71,25 @@ function DailyGame() {
           </button>
         )}
 
-        <p className="text-base text-pastel-400 h-6">{message}</p>
+        <p className="text-base text-pastel-400 min-h-[1.5rem]">{message}</p>
       </div>
 
-      {/* Sağ Kısım: Harf Izgarası */}
-      <div>
+      {/* Harf Izgarası */}
+      <div className="relative">
         <WordGrid
           grid={puzzle.grid}
           words={puzzle.words}
           foundWords={foundWords}
           onWordFound={handleWordFound}
         />
+        {allFound && (
+          <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 bg-green-100 px-4 py-2 rounded mt-2">
+            <p className="text-green-700 font-semibold">
+              All words found! Great job!
+            </p>
+          </div>
+        )}
       </div>
-
-      {/* Eğer tüm kelimeler bulunduysa tebrik mesajı */}
-      {allFound && (
-        <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-green-100 px-4 py-2 rounded">
-          <p className="text-green-700 font-semibold">
-            Congratulations! You found all words!
-          </p>
-        </div>
-      )}
 
       <HintModal
         isOpen={hintOpen}
@@ -103,4 +101,5 @@ function DailyGame() {
 }
 
 export default DailyGame;
+
 
