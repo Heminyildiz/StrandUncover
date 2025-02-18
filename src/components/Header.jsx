@@ -3,21 +3,21 @@ import { Link } from "react-router-dom";
 
 function Header() {
   return (
-    <header className="bg-pastel-300 p-4 shadow-md">
-      <nav className="container mx-auto flex justify-between items-center">
+    <header className="bg-pastel-100 p-4 shadow-sm">
+      <nav className="container mx-auto flex items-center justify-between">
         <Link to="/" className="text-xl font-bold">
-          Strands Clone
+          STRANDS CLONE
         </Link>
         <div className="flex gap-4">
           <Link
             to="/daily"
-            className="px-3 py-1 bg-pastel-500 rounded hover:bg-pastel-600 transition"
+            className="px-3 py-1 bg-pastel-200 rounded hover:bg-pastel-300 transition"
           >
             Daily
           </Link>
           <Link
             to="/zen"
-            className="px-3 py-1 bg-pastel-500 rounded hover:bg-pastel-600 transition"
+            className="px-3 py-1 bg-pastel-200 rounded hover:bg-pastel-300 transition"
           >
             Zen
           </Link>
@@ -28,3 +28,4 @@ function Header() {
 }
 
 export default Header;
+
