@@ -10,16 +10,18 @@ module.exports = {
         lexend: ["Lexend", "sans-serif"],
       },
       colors: {
-        brandPrimary: "#8B5CF6",    // mor 
-        brandSecondary: "#EC4899",  // pembe
-        brandAccent: "#FBBF24",     // turuncu ton
-        brandLight: "#F3F4F6",      // açık gri
-        brandGreen: "#34D399"       // yeşil
+        brandPrimary: "#8B5CF6",    // Mor 
+        brandSecondary: "#EC4899",  // Pembe
+        brandAccent: "#FBBF24",     // Turuncu
+        brandLight: "#F3F4F6",      // Açık Gri
+        brandGreen: "#34D399",      // Yeşil
+        brandRed: "#EF4444"         // Kırmızı
       }
     },
   },
   plugins: [],
 };
+
 
 
 
