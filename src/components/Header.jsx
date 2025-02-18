@@ -5,7 +5,7 @@ function Header() {
   const [open, setOpen] = useState(false);
   const location = useLocation();
 
-  // Hangi moddayız?
+  // Hangi moddaysak onu göster
   let currentMode = "Daily";
   if (location.pathname.includes("/zen")) {
     currentMode = "Zen";
@@ -52,6 +52,7 @@ function Header() {
 }
 
 export default Header;
+
 
 
 
