@@ -218,7 +218,7 @@ function main() {
     const p = generateOnePuzzle();
     zenPuzzles.push(p);
   }
-
+  
   // JSON objesi
   const output = {
     // Bir örnek daily puzzle
