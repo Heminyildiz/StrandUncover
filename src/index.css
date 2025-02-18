@@ -2,11 +2,18 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Ek modal backdrop stili */
+/* Body için Lexend font uygulaması */
+body {
+  @apply font-lexend;
+}
+
+/* Modal arka plan */
 .modal-backdrop {
   @apply fixed inset-0 flex items-center justify-center bg-black bg-opacity-50;
 }
+
 .modal-content {
   @apply bg-white p-4 rounded shadow-md;
 }
+
 
