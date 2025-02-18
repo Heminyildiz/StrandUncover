@@ -5,12 +5,12 @@ function HintModal({ isOpen, hint, onClose }) {
 
   return (
     <div className="modal-backdrop">
-      <div className="modal-content w-3/4 max-w-md">
-        <h2 className="text-lg font-bold mb-2">Hint</h2>
+      <div className="modal-content w-3/4 max-w-sm">
+        <h2 className="text-lg font-semibold mb-2">Hint</h2>
         <p className="mb-4">{hint}</p>
         <button
           onClick={onClose}
-          className="px-3 py-1 bg-pastel-400 hover:bg-pastel-500 rounded"
+          className="px-4 py-1 bg-pastel-200 rounded hover:bg-pastel-300 transition"
         >
           Close
         </button>
@@ -20,3 +20,4 @@ function HintModal({ isOpen, hint, onClose }) {
 }
 
 export default HintModal;
+
