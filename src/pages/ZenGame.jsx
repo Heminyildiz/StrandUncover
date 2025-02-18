@@ -61,8 +61,8 @@ function ZenGame() {
         Find all words, then load a new puzzle!
       </p>
 
-      {/* Seçilen harflerden oluşan kelime */}
-      <div className="text-brandSecondary font-bold text-xl h-6">
+      {/* Seçili harflerden oluşan kelime */}
+      <div className="text-brandSecondary font-bold text-lg h-6">
         {partialWord}
       </div>
 
@@ -94,6 +94,7 @@ function ZenGame() {
 }
 
 export default ZenGame;
+
 
 
 
