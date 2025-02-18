@@ -2,10 +2,8 @@ import React, { useEffect, useState, useRef } from "react";
 
 const ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
-// path içindeki hücreler düz çizgi zorunluluğu yok, 
-// sadece bitişik hücreleri ekleyebiliyoruz (8 yön).
+// Sadece son seçili harfin 8 komşusundan biri mi?
 function isNeighbor(last, next) {
-  // Farklar -1,0,+1 aralığında olmalı
   const rowDiff = Math.abs(next.row - last.row);
   const colDiff = Math.abs(next.col - last.col);
   return rowDiff <= 1 && colDiff <= 1 && !(rowDiff === 0 && colDiff === 0);
@@ -26,8 +24,8 @@ function WordGrid({
   const [warning, setWarning] = useState("");
   const pointerDownRef = useRef(false);
 
-  // Boş hücrelere rastgele harf
   useEffect(() => {
+    // Boş hücrelere ("" ya da " ") rastgele harf
     const filled = initialGrid.map((row) =>
       row.map((cell) => {
         if (!cell || cell.trim() === "") {
@@ -40,7 +38,6 @@ function WordGrid({
     setSelectedPath([]);
   }, [initialGrid]);
 
-  // path değişince partialWord güncelle
   useEffect(() => {
     if (selectedPath.length === 0) {
       onPartialWordChange?.("");
@@ -49,7 +46,6 @@ function WordGrid({
     const partial = buildStringFromPath(selectedPath, grid);
     onPartialWordChange?.(partial);
 
-    // 10 sınır
     if (selectedPath.length > 10) {
       setWarning("Too long!");
       setTimeout(() => {
@@ -65,15 +61,41 @@ function WordGrid({
     setSelectedPath([]);
   };
 
+  const handlePointerMove = (e) => {
+    if (!pointerDownRef.current) return;
+    e.preventDefault();
+
+    // Hangi hücreye geldik?
+    const target = e.target;
+    if (!target.dataset.row) return;
+
+    const row = parseInt(target.dataset.row, 10);
+    const col = parseInt(target.dataset.col, 10);
+
+    // Path'te zaten var mı?
+    const exists = selectedPath.some((p) => p.row === row && p.col === col);
+    if (exists) return;
+
+    // İlk hücreyse direkt ekle
+    if (selectedPath.length === 0) {
+      setSelectedPath([{ row, col }]);
+    } else {
+      // Sondaki hücreye komşu mu?
+      const lastCell = selectedPath[selectedPath.length - 1];
+      if (isNeighbor(lastCell, { row, col })) {
+        if (selectedPath.length < 10) {
+          setSelectedPath((prev) => [...prev, { row, col }]);
+        }
+      }
+    }
+  };
+
   const handlePointerUp = (e) => {
     e.preventDefault();
     pointerDownRef.current = false;
-
     if (selectedPath.length > 0 && selectedPath.length <= 10) {
-      // Tamamlanan kelime puzzle words içinde mi?
       const selectedWord = buildStringFromPath(selectedPath, grid);
       const reversed = selectedWord.split("").reverse().join("");
-
       const found = words.find(
         (w) => w.toUpperCase() === selectedWord || w.toUpperCase() === reversed
       );
@@ -82,34 +104,6 @@ function WordGrid({
       }
     }
     resetSelection();
-  };
-
-  const handlePointerMove = (e) => {
-    if (!pointerDownRef.current) return;
-    e.preventDefault();
-
-    const target = e.target;
-    if (!target.dataset.row) return;
-
-    const row = parseInt(target.dataset.row, 10);
-    const col = parseInt(target.dataset.col, 10);
-
-    // Aynı hücre path'te var mı?
-    const alreadyInPath = selectedPath.some((p) => p.row === row && p.col === col);
-    if (alreadyInPath) return;
-
-    // path boşsa direkt ekle
-    if (selectedPath.length === 0) {
-      setSelectedPath([{ row, col }]);
-    } else {
-      // Son seçili harfe bitişik mi?
-      const lastCell = selectedPath[selectedPath.length - 1];
-      if (isNeighbor(lastCell, { row, col })) {
-        if (selectedPath.length < 10) {
-          setSelectedPath((prev) => [...prev, { row, col }]);
-        }
-      }
-    }
   };
 
   const resetSelection = () => {
@@ -137,25 +131,22 @@ function WordGrid({
             const isSelected = selectedPath.some(
               (p) => p.row === rowIndex && p.col === colIndex
             );
-
-            const cellClasses = `
-              w-12 h-12 md:w-14 md:h-14 
-              flex items-center justify-center 
-              text-lg md:text-xl font-bold 
-              cursor-pointer select-none
-              ${
-                isSelected
-                  ? "bg-[#bfdc80] text-black"
-                  : "bg-white text-gray-900"
-              }
-            `;
-
             return (
               <div
                 key={`${rowIndex},${colIndex}`}
                 data-row={rowIndex}
                 data-col={colIndex}
-                className={cellClasses}
+                className={`
+                  w-12 h-12 md:w-14 md:h-14 
+                  flex items-center justify-center 
+                  text-lg md:text-xl font-bold 
+                  cursor-pointer select-none
+                  ${
+                    isSelected
+                      ? "bg-[#bfdc80] text-black"
+                      : "bg-white text-gray-900"
+                  }
+                `}
               >
                 {letter}
               </div>
@@ -168,6 +159,7 @@ function WordGrid({
 }
 
 export default WordGrid;
+
 
 
 
