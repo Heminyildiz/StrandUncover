@@ -1,50 +1,40 @@
 import React, { useEffect, useState } from "react";
+import WordGrid from "../components/WordGrid";
 import HintModal from "../components/HintModal";
 
 function DailyGame() {
   const [puzzle, setPuzzle] = useState(null);
-  const [guess, setGuess] = useState("");
   const [foundWords, setFoundWords] = useState([]);
+  const [hintOpen, setHintOpen] = useState(false);
   const [message, setMessage] = useState("");
-  const [showHint, setShowHint] = useState(false);
 
-  // Bugünün tarihini YYYY-MM-DD olarak al
-  const today = new Date().toISOString().split("T")[0];
+  const today = new Date().toISOString().split("T")[0]; 
+  // Örnek: "2025-02-18"
 
   useEffect(() => {
-    // puzzleData.json'dan dailyPuzzles verisini çek
     fetch("/puzzleData.json")
       .then((res) => res.json())
       .then((data) => {
-        const dailyList = data.dailyPuzzles;
-        // Bugünkü puzzle'ı bul
-        const todayPuzzle = dailyList.find((p) => p.date === today);
+        if (!data.dailyPuzzles) return;
+        const puzzleOfTheDay = data.dailyPuzzles.find((p) => p.date === today);
 
-        // Eğer bugüne ait puzzle yoksa ilk puzzle'ı set edelim (örnek)
-        // Gerçek proje mantığında "no puzzle found" gibi bir durum gösterebilirsiniz
-        if (todayPuzzle) {
-          setPuzzle(todayPuzzle);
+        // Eğer bugüne ait puzzle yoksa bir tane fallback alalım (veya hata verilebilir)
+        if (puzzleOfTheDay) {
+          setPuzzle(puzzleOfTheDay);
         } else {
-          setPuzzle(dailyList[0]);
+          setPuzzle(data.dailyPuzzles[0]); 
         }
       })
       .catch((err) => console.error(err));
   }, [today]);
 
-  const handleGuess = () => {
-    if (!puzzle) return;
-
-    const upperGuess = guess.trim().toUpperCase();
-
-    if (foundWords.includes(upperGuess)) {
+  const handleWordFound = (word) => {
+    if (foundWords.includes(word)) {
       setMessage("Already found!");
-    } else if (puzzle.words.includes(upperGuess)) {
-      setFoundWords([...foundWords, upperGuess]);
-      setMessage(`You found "${upperGuess}"!`);
-    } else {
-      setMessage("Not correct. Try again!");
+      return;
     }
-    setGuess("");
+    setFoundWords((prev) => [...prev, word]);
+    setMessage(`Found "${word}"!`);
   };
 
   if (!puzzle) {
@@ -55,67 +45,62 @@ function DailyGame() {
     );
   }
 
-  const allFound = foundWords.length === puzzle.words.length;
+  const totalWords = puzzle.words.length;
+  const remaining = totalWords - foundWords.length;
+  const allFound = remaining === 0;
 
   return (
-    <main className="container mx-auto p-4 text-center">
-      <h2 className="text-xl font-bold mb-2">
-        Daily Puzzle: {puzzle.themeTitle}
-      </h2>
-
-      {allFound ? (
-        <div className="mt-4">
-          <p className="text-green-600 font-semibold">
-            Congratulations! You found all theme words!
-          </p>
-          <p className="text-sm mt-2">Come back tomorrow for a new puzzle!</p>
+    <main className="container mx-auto p-4 flex flex-col md:flex-row items-center md:items-start justify-center gap-8">
+      {/* Sol Kısım: Tema, Sayac, Hint */}
+      <div className="flex flex-col items-center md:items-start gap-4">
+        <div className="bg-pastel-100 px-4 py-2 rounded shadow text-center md:text-left">
+          <p className="text-sm text-gray-500 font-semibold">TODAY’S THEME</p>
+          <h2 className="text-xl font-bold">{puzzle.themeTitle}</h2>
         </div>
-      ) : (
-        <div className="mb-4">
-          <p>Find {puzzle.words.length} words related to this theme.</p>
-          <div className="flex flex-col items-center mt-4">
-            <div className="flex gap-2">
-              <input
-                type="text"
-                className="border border-pastel-400 rounded px-2 py-1"
-                placeholder="Enter a word..."
-                value={guess}
-                onChange={(e) => setGuess(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") handleGuess();
-                }}
-              />
-              <button
-                onClick={handleGuess}
-                className="px-3 py-1 bg-pastel-500 rounded hover:bg-pastel-600 transition"
-              >
-                Guess
-              </button>
-            </div>
-            <p className="mt-2 text-pastel-800">{message}</p>
-          </div>
-        </div>
-      )}
 
-      {/* Hint Butonu */}
-      {!allFound && (
-        <div>
+        <p className="text-lg font-medium">
+          {foundWords.length} of {totalWords} theme words found.
+        </p>
+
+        {!allFound && (
           <button
-            onClick={() => setShowHint(true)}
-            className="px-3 py-1 bg-pastel-200 rounded hover:bg-pastel-300 transition"
+            onClick={() => setHintOpen(true)}
+            className="px-4 py-1 bg-pastel-200 rounded hover:bg-pastel-300 transition"
           >
             Hint
           </button>
+        )}
+
+        <p className="text-base text-pastel-400 h-6">{message}</p>
+      </div>
+
+      {/* Sağ Kısım: Harf Izgarası */}
+      <div>
+        <WordGrid
+          grid={puzzle.grid}
+          words={puzzle.words}
+          foundWords={foundWords}
+          onWordFound={handleWordFound}
+        />
+      </div>
+
+      {/* Eğer tüm kelimeler bulunduysa tebrik mesajı */}
+      {allFound && (
+        <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-green-100 px-4 py-2 rounded">
+          <p className="text-green-700 font-semibold">
+            Congratulations! You found all words!
+          </p>
         </div>
       )}
 
       <HintModal
-        isOpen={showHint}
+        isOpen={hintOpen}
         hint={puzzle.hint}
-        onClose={() => setShowHint(false)}
+        onClose={() => setHintOpen(false)}
       />
     </main>
   );
 }
 
 export default DailyGame;
+
