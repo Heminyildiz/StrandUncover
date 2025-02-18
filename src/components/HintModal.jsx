@@ -10,7 +10,7 @@ function HintModal({ isOpen, hint, onClose }) {
         <p className="mb-4">{hint}</p>
         <button
           onClick={onClose}
-          className="px-4 py-1 bg-pastel-200 rounded hover:bg-pastel-300 transition"
+          className="px-4 py-1 bg-brandAccent rounded hover:bg-brandSecondary hover:text-white transition"
         >
           Close
         </button>
@@ -20,5 +20,6 @@ function HintModal({ isOpen, hint, onClose }) {
 }
 
 export default HintModal;
+
 
 
