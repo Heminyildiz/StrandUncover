@@ -1,6 +1,5 @@
 import React from "react";
-import { Routes, Route } from "react-router-dom";
-import Home from "./pages/Home";
+import { Routes, Route, Navigate } from "react-router-dom";
 import DailyGame from "./pages/DailyGame";
 import ZenGame from "./pages/ZenGame";
 import Header from "./components/Header";
@@ -11,7 +10,8 @@ function App() {
       <Header />
       <div className="flex-1">
         <Routes>
-          <Route path="/" element={<Home />} />
+          {/* Ana sayfa => Daily */}
+          <Route path="/" element={<Navigate to="/daily" replace />} />
           <Route path="/daily" element={<DailyGame />} />
           <Route path="/zen" element={<ZenGame />} />
         </Routes>
@@ -21,4 +21,5 @@ function App() {
 }
 
 export default App;
+
 
