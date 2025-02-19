@@ -1,8 +1,8 @@
 import React, { useEffect, useState, useRef } from "react";
 import Header from "../components/Header";
+import Footer from "../components/Footer";
 import WordGrid from "../components/WordGrid";
 
-// Challenge mod aşamaları
 const challengeStages = [
   { time: 60, wordsNeeded: 5 },
   { time: 45, wordsNeeded: 6 },
@@ -11,23 +11,27 @@ const challengeStages = [
 ];
 
 function MainGame() {
-  const [mode, setMode] = useState("zen");          // "zen" veya "challenge"
+  // "zen" veya "challenge"
+  const [mode, setMode] = useState("zen");
   const [puzzle, setPuzzle] = useState(null);
   const [foundWords, setFoundWords] = useState([]);
   const [message, setMessage] = useState("");
   const [partialWord, setPartialWord] = useState("");
+
+  // Zen mod için Hint butonu
+  const [zenHintUsed, setZenHintUsed] = useState(false);
 
   // Challenge
   const [currentStage, setCurrentStage] = useState(0);
   const [timeLeft, setTimeLeft] = useState(0);
   const [challengeComplete, setChallengeComplete] = useState(false);
   const [challengeFailed, setChallengeFailed] = useState(false);
-
   const timerRef = useRef(null);
+
   const [challengePuzzles, setChallengePuzzles] = useState([]);
   const [usedIndices, setUsedIndices] = useState([]);
 
-  // Mod değişince puzzle yükle
+  // Puzzle yükleme
   useEffect(() => {
     if (mode === "zen") {
       loadZenPuzzle();
@@ -45,7 +49,6 @@ function MainGame() {
         .catch((err) => console.error(err));
     }
 
-    // Cleanup
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
@@ -74,8 +77,12 @@ function MainGame() {
     setPartialWord("");
     setChallengeComplete(false);
     setChallengeFailed(false);
+
+    // Zen Hint, her yeni puzzle geldiğinde sıfırlansın.
+    setZenHintUsed(false);
   };
 
+  // Challenge
   const startChallenge = (stageIndex, zList = []) => {
     if (timerRef.current) clearInterval(timerRef.current);
 
@@ -103,7 +110,6 @@ function MainGame() {
     }, 1000);
   };
 
-  // Rastgele puzzle seç
   const pickNewPuzzle = (zList) => {
     if (!zList.length) return null;
     let available = zList
@@ -129,7 +135,7 @@ function MainGame() {
     }
   };
 
-  // Challenge: Kelime sayısı yeterli mi kontrol
+  // Challenge => yeterli kelime bulunmuş mu?
   useEffect(() => {
     if (mode !== "challenge" || !puzzle) return;
 
@@ -159,23 +165,19 @@ function MainGame() {
     setChallengeFailed(false);
   };
 
-  // Time sayacı: "Time: mm:ss" format, şeffaf, text #92555B
-  // Pozisyon => harf ızgarasının sağ üst köşesindeki harfin biraz üzerinde
-  // Bunu WordGrid'in relative container'ında konumlandırmak istiyoruz
-  // => Yine MainGame'de, WordGrid ile aynı "container" vs. plan.
-  // Basit yaklaşım: top-2 right-0 => margin ayarla.
-
+  // Time sayacı
   let challengeTimerUI = null;
   if (mode === "challenge" && puzzle) {
     const mm = Math.floor(timeLeft / 60);
     const ss = timeLeft % 60;
     const timeStr = `${mm}:${ss < 10 ? "0" + ss : ss}`;
 
+    // Daha aşağı al, bold, text #92555B
     challengeTimerUI = (
       <div
         className="
           absolute
-          top-[-1.5rem]
+          top-6  /* biraz daha aşağı */
           right-0
           text-[#92555B]
           font-bold
@@ -186,6 +188,26 @@ function MainGame() {
       </div>
     );
   }
+
+  // Zen'de Hint butonu
+  const handleZenHint = () => {
+    if (!puzzle) return;
+    // Bulunmamış kelimeleri listele
+    const notFound = puzzle.words.filter(
+      (w) => !foundWords.includes(w.toUpperCase())
+    );
+    if (notFound.length === 0) {
+      // Tüm kelimeler bulunmuş, ipucu gerek yok
+      setMessage("All words found!");
+      return;
+    }
+    // Rastgele bir kelime seç
+    const randomWord = notFound[Math.floor(Math.random() * notFound.length)];
+    // İlk harf
+    const firstLetter = randomWord[0].toUpperCase();
+    setMessage(`Hint: The first letter is "${firstLetter}".`);
+    setZenHintUsed(true);
+  };
 
   // Challenge popups
   const challengePopups = (
@@ -227,7 +249,6 @@ function MainGame() {
     </>
   );
 
-  // Henüz puzzle yoksa
   if (!puzzle && mode === "challenge") {
     return (
       <>
@@ -248,22 +269,15 @@ function MainGame() {
     );
   }
 
-  // Render
   return (
     <>
       <Header mode={mode} setMode={setMode} />
 
-      {/* 
-        Kapsayıcı div -> "relative" 
-        WordGrid => "relative" 
-        Timer'ı orada konumlandıracağız 
-      */}
+      {/* Timer ve ızgara */}
       <div className="container mx-auto p-4 flex flex-col items-center">
-        {/* WordGrid konteyneri, timer'ı gridin içine konumlandırmak için relative */}
         <div className="relative">
           {challengeTimerUI}
 
-          {/* Harf Izgarası */}
           {puzzle && (
             <WordGrid
               grid={puzzle.grid}
@@ -274,7 +288,8 @@ function MainGame() {
           )}
         </div>
 
-        {/* Zen alt kısım */}
+        {/* Zen alt kısım: Confirm Word butonu WordGrid'de
+            Hint butonu burada */}
         {mode === "zen" && puzzle && (
           <div className="mt-4 flex flex-col items-center gap-2">
             <p className="text-base text-brandSecondary min-h-[1.5rem]">
@@ -283,6 +298,15 @@ function MainGame() {
             <p className="text-lg font-medium">
               Found {foundWords.length} of {puzzle.words.length}
             </p>
+            {/* Hint Butonu */}
+            {!zenHintUsed && (
+              <button
+                onClick={handleZenHint}
+                className="px-4 py-2 mt-2 bg-[#bfdc80] text-black rounded hover:opacity-80"
+              >
+                Hint
+              </button>
+            )}
           </div>
         )}
 
@@ -295,19 +319,19 @@ function MainGame() {
             <p className="text-lg font-medium">
               Found: {foundWords.length}
             </p>
-            <p className="text-sm text-gray-500">
-              Need {challengeStages[currentStage].wordsNeeded} words
-            </p>
           </div>
         )}
       </div>
 
       {challengePopups}
+
+      <Footer />
     </>
   );
 }
 
 export default MainGame;
+
 
 
 
