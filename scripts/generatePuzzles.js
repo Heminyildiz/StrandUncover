@@ -19,7 +19,7 @@ const ROWS = 7;
 const COLS = 6;
 
 // Kaç puzzle (zenPuzzles) üretilecek
-const ZEN_COUNT = 50;
+const ZEN_COUNT = 100;
 
 // Kullanacağımız harf seti
 const ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -44,11 +44,40 @@ const WORD_POOL = [
   "SWORD", "SHINE", "BLIZZARD", "SPRING", "MAJOR",
   "MINOR", "OREO", "FRUIT", "GRASS", "WOODS",
   "FAITH", "GLASS", "FAKE", "EMPTY", "BRICK",
+
+  // 3 harfli kelimeler (min. 50)
+  "SUN", "DOG", "CAT", "MAP", "HAT", "PEN", "CAR", "RUN", "TOP", "NET",
+  "BAT", "RAY", "BUG", "POT", "BOX", "TIP", "LID", "BUS", "HOP", "WAX",
+  "PIN", "VAN", "LOG", "BEE", "HEN", "OWL", "FOX", "TEA", "RIP", "EYE",
+  "CAP", "CUP", "TOY", "RUG", "MUD", "ZIP", "TAP", "JAM", "FIG", "KEY",
+  "BOW", "BAG", "EAR", "ARM", "LEG", "INK", "ORB", "DYE", "OAR", "EGG",
+
+  // 4 harfli kelimeler (min. 50)
+  "MOON", "FISH", "JUMP", "WALK", "TREE", "FIRE", "HAND", "BELL", "ROCK", "STAR",
+  "SAND", "WISH", "LOVE", "BLUE", "GRAY", "FORK", "WAVE", "DOOR", "RICE", "KITE",
+  "LAMP", "BONE", "TANK", "YARD", "BEAR", "BIRD", "ROAD", "SEED", "WIND", "WOOD",
+  "COAT", "LACE", "RACE", "TILE", "PEAR", "BOAT", "SNOW", "GIFT", "GOLD", "KING",
+  "FIST", "TONE", "MINT", "PEAK", "CREW", "ZONE", "VEIN", "FALL", "QUIZ", "CORN",
+
+  // 6 harfli kelimeler (min. 50)
+  "PLANET", "GARDEN", "FATHER", "MARKET", "BOTTLE", "JOURNY", "NARROW", "CANDLE", "LANTER", "BORDER",
+  "BREEZE", "MIRROR", "WINDOW", "TUNNEL", "RABBIT", "SPHERE", "SILVER", "LITTLE", "BANANA", "YELLOW",
+  "WINTER", "FISHER", "CANYON", "MIRAGE", "SINGER", "HUNTER", "WEALTH", "GLOWER", "THRILL", "CIRCUS",
+  "MUSCLE", "FINGER", "BORDER", "ANCHOR", "JACKET", "GARDEN", "MARKER", "HUMMER", "BORDER", "JUNGLE",
+  "DANGER", "STAPLE", "GOBLET", "CLOVER", "SCARAB", "VORTEX", "DUNGER", "MOTION", "SWEEPS", "TRAVEL",
+
+  // 7 harfli kelimeler (min. 50)
+  "CAMPING", "CRYSTAL", "FANTASY", "GADGETS", "HISTORY", "LIBRARY", "MEADOWS", "NATURES", "OCTOPUS", "PIRATES",
+  "RAINBOW", "TUNNELS", "VILLAGE", "WARRIOR", "ZODIACS", "JOURNEY", "HOLIDAY", "MOUNTAIN", "CANYONS", "GLACIER",
+  "CIRCLES", "BOTTLES", "CUPCAKE", "TROUBLE", "TURMOIL", "FURTHER", "HUMMING", "IMPACTO", "SHADOWS", "SECRETS",
+  "LANTERN", "JUNGLES", "DUNGEON", "VORTEXS", "MYSTERY", "CLOVERS", "JACKETS", "FURNACE", "NUGGETS", "TROPHYS",
+  "MISSION", "CANYONS", "MUSICAL", "CANDLES", "BARRIER", "FLAMING", "SPLITTY", "GARLAND", "LANTERN", "VIBRANT"
 ];
 
+
 // Her puzzle'da kaç kelime olacak (min - max)
-const MIN_WORDS = 5;
-const MAX_WORDS = 8;
+const MIN_WORDS = 10;
+const MAX_WORDS = 18;
 
 // 8 farklı yön
 const DIRECTIONS = [
