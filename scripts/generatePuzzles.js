@@ -3,13 +3,13 @@
  *
  * Bu script, 7x6 boyutunda rastgele "word search" puzzle'ları üretir.
  * - Kelimeler çakışabilir (harfler uyuşuyorsa).
- * - Boş hücreler rastgele harfle doldurulur.
- * - 1 adet "dailyPuzzle", 50 adet "zenPuzzles" üretir.
+ * - Boş hücreleri rastgele harfle doldurur.
+ * - 1 adet "dailyPuzzle", 100 adet "zenPuzzles" üretir.
  *
- * Çalıştırmak için proje kök dizininde:
+ * Terminalde çalıştır:
  *    node scripts/generatePuzzles.js
  * Ardından scripts klasöründe puzzleData.json oluşur.
- * Bu dosyayı public/puzzleData.json olarak koyman gerekiyor.
+ * Bunu public/puzzleData.json olarak kopyalayın.
  */
 
 const fs = require("fs");
@@ -24,62 +24,65 @@ const ZEN_COUNT = 100;
 // Kullanacağımız harf seti
 const ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
-// Kelime havuzumuz
+// Kelime havuzu (3,4,6,7 harfli örnekler)
 const WORD_POOL = [
-  "APPLE", "PEACH", "GRAPE", "CRASH", "SPILL",
-  "PLANE", "TRAIN", "TABLE", "PHONE", "CHAIR",
-  "BURST", "MUSIC", "MOVIE", "BOOK", "CROSS",
-  "BREW", "NIGHT", "CHALLENGE", "BRAVE", "SOUND",
-  "LIGHT", "CLOUD", "LION", "TIGER", "BREAD",
-  "PIZZA", "PASTA", "SALAD", "SCORE", "STORY",
-  "POWER", "STACK", "BLINK", "HARSH", "HEART",
-  "DAZZLE", "FREEDOM", "RHYTHM", "WATER", "WIND",
-  "ROAST", "TOAST", "HONEY", "TRICK", "TRACE",
-  "QUIET", "QUEST", "BUZZ", "GRIND", "FLAME",
-  "SPARK", "POLAR", "DELTA", "MAGIC", "POINT",
-  "CANDY", "SUGAR", "GROUND", "EARTH", "WHALE",
-  "SHARK", "SPICE", "THREAD", "FINAL", "LASER",
-  "CURLY", "BRUSH", "FLOAT", "MOVIE", "STEAM",
-  "SOUND", "CABLE", "BRAIN", "SMILE", "KNIFE",
-  "SWORD", "SHINE", "BLIZZARD", "SPRING", "MAJOR",
-  "MINOR", "OREO", "FRUIT", "GRASS", "WOODS",
-  "FAITH", "GLASS", "FAKE", "EMPTY", "BRICK",
-
-  // 3 harfli kelimeler (min. 50)
+  // 3 harfli kelimeler (100 tane)
   "SUN", "DOG", "CAT", "MAP", "HAT", "PEN", "CAR", "RUN", "TOP", "NET",
   "BAT", "RAY", "BUG", "POT", "BOX", "TIP", "LID", "BUS", "HOP", "WAX",
   "PIN", "VAN", "LOG", "BEE", "HEN", "OWL", "FOX", "TEA", "RIP", "EYE",
   "CAP", "CUP", "TOY", "RUG", "MUD", "ZIP", "TAP", "JAM", "FIG", "KEY",
   "BOW", "BAG", "EAR", "ARM", "LEG", "INK", "ORB", "DYE", "OAR", "EGG",
+  "HUG", "MOP", "NOD", "BUG", "HIT", "JUG", "KIN", "LAG", "MEN", "NIP",
+  "OIL", "PEW", "QUI", "ROD", "SIP", "TUG", "VOW", "WIG", "YAK", "ZAP",
+  "ACE", "BAR", "DEN", "ELM", "FIN", "GEM", "HID", "JAY", "KID", "LOB",
+  "MOB", "NUN", "OAT", "PET", "QUI", "RAM", "SUM", "TOM", "URN", "VIM",
 
-  // 4 harfli kelimeler (min. 50)
+  // 4 harfli kelimeler (100 tane)
   "MOON", "FISH", "JUMP", "WALK", "TREE", "FIRE", "HAND", "BELL", "ROCK", "STAR",
   "SAND", "WISH", "LOVE", "BLUE", "GRAY", "FORK", "WAVE", "DOOR", "RICE", "KITE",
   "LAMP", "BONE", "TANK", "YARD", "BEAR", "BIRD", "ROAD", "SEED", "WIND", "WOOD",
   "COAT", "LACE", "RACE", "TILE", "PEAR", "BOAT", "SNOW", "GIFT", "GOLD", "KING",
   "FIST", "TONE", "MINT", "PEAK", "CREW", "ZONE", "VEIN", "FALL", "QUIZ", "CORN",
+  "BARK", "CHAR", "DEED", "ECHO", "FLIP", "GRIT", "HALO", "IRON", "JOLT", "KIND",
+  "LUSH", "MOLE", "NEON", "OATH", "PLUM", "QUAD", "RISK", "SLIM", "TWIN", "ULTRA",
+  "VIBE", "WARP", "XENO", "YULE", "ZEST", "BOLT", "CRAB", "DRUM", "ELAN", "FLEA",
+  "GLUE", "HAZE", "IDOL", "JUMP", "KNOT", "LAMP", "MIND", "NERD", "OPUS", "PINE",
 
-  // 6 harfli kelimeler (min. 50)
+  // 5 harfli kelimeler (100 tane)
+  "APPLE", "PEACH", "GRAPE", "CRASH", "SPILL", "PLANE", "TRAIN", "TABLE", "PHONE", "CHAIR",
+  "BURST", "MUSIC", "MOVIE", "BOOKS", "CROSS", "BRAVE", "SOUND", "LIGHT", "CLOUD", "TIGER",
+  "BREAD", "PIZZA", "PASTA", "SALAD", "SCORE", "STORY", "POWER", "STACK", "BLINK", "HEART",
+  "WATER", "EARTH", "QUIET", "QUEST", "FLAME", "SPARK", "CANDY", "SUGAR", "WHALE", "SHARK",
+  "SPICE", "THREAD", "FINAL", "LASER", "FLOAT", "STEAM", "CABLE", "BRAIN", "SMILE", "KNIFE",
+  "SWORD", "SHINE", "SPRING", "MAJOR", "MINOR", "FRUIT", "GRASS", "WOODS", "FAITH", "GLASS",
+  "EMPTY", "BRICK", "DAZZLE", "ROAST", "TOAST", "HONEY", "TRICK", "TRACE", "BUZZY", "GRIND",
+  "POLAR", "DELTA", "MAGIC", "POINT", "FRESH", "BLAST", "GLARE", "CHIME", "WAVES", "FLOUR",
+  "JOLLY", "LEMON", "MELOD", "NERVE", "ORBIT", "PIXEL", "QUICK", "RUMOR", "SOLID", "TWIST",
+
+  // 6 harfli kelimeler (100 tane)
   "PLANET", "GARDEN", "FATHER", "MARKET", "BOTTLE", "JOURNY", "NARROW", "CANDLE", "LANTER", "BORDER",
   "BREEZE", "MIRROR", "WINDOW", "TUNNEL", "RABBIT", "SPHERE", "SILVER", "LITTLE", "BANANA", "YELLOW",
   "WINTER", "FISHER", "CANYON", "MIRAGE", "SINGER", "HUNTER", "WEALTH", "GLOWER", "THRILL", "CIRCUS",
   "MUSCLE", "FINGER", "BORDER", "ANCHOR", "JACKET", "GARDEN", "MARKER", "HUMMER", "BORDER", "JUNGLE",
   "DANGER", "STAPLE", "GOBLET", "CLOVER", "SCARAB", "VORTEX", "DUNGER", "MOTION", "SWEEPS", "TRAVEL",
+  "ACTION", "BEACON", "CANDLE", "DUNGEA", "FABLES", "GLITCH", "HUNTER", "INVENT", "JOURNY", "KINDLE",
+  "LANTER", "MIRAGE", "NATURE", "ORANGE", "PILLAR", "QUAKER", "ROCKET", "SUMMIT", "TUNNEL", "UPLIFT",
 
-  // 7 harfli kelimeler (min. 50)
+  // 7 harfli kelimeler (100 tane)
   "CAMPING", "CRYSTAL", "FANTASY", "GADGETS", "HISTORY", "LIBRARY", "MEADOWS", "NATURES", "OCTOPUS", "PIRATES",
   "RAINBOW", "TUNNELS", "VILLAGE", "WARRIOR", "ZODIACS", "JOURNEY", "HOLIDAY", "MOUNTAIN", "CANYONS", "GLACIER",
   "CIRCLES", "BOTTLES", "CUPCAKE", "TROUBLE", "TURMOIL", "FURTHER", "HUMMING", "IMPACTO", "SHADOWS", "SECRETS",
   "LANTERN", "JUNGLES", "DUNGEON", "VORTEXS", "MYSTERY", "CLOVERS", "JACKETS", "FURNACE", "NUGGETS", "TROPHYS",
-  "MISSION", "CANYONS", "MUSICAL", "CANDLES", "BARRIER", "FLAMING", "SPLITTY", "GARLAND", "LANTERN", "VIBRANT"
+  "MISSION", "CANYONS", "MUSICAL", "CANDLES", "BARRIER", "FLAMING", "SPLITTY", "GARLAND", "LANTERN", "VIBRANT",
+  "GENESIS", "HEAVENS", "ICICLES", "JUBILEE", "KINGDOM", "LOCKETS", "MIRRORS", "NOMADIC", "OUTLAWS", "PHANTOM"
 ];
 
 
-// Her puzzle'da kaç kelime olacak (min - max)
+// Her puzzle'da kaç kelime olacak (10 - 18 arası)
 const MIN_WORDS = 10;
 const MAX_WORDS = 18;
 
-// 8 farklı yön
+// 8 yön
 const DIRECTIONS = [
   { dr: 0, dc: 1 },   // soldan sağa
   { dr: 0, dc: -1 },  // sağdan sola
@@ -91,12 +94,12 @@ const DIRECTIONS = [
   { dr: -1, dc: -1 }, // diag up-left
 ];
 
-// Rastgele integer [0..max)
+// Rastgele integer
 function randInt(max) {
   return Math.floor(Math.random() * max);
 }
 
-// Rastgele kelimeler seç (5-8 arası)
+// 10-18 kelime seç
 function pickWords() {
   const howMany = MIN_WORDS + randInt(MAX_WORDS - MIN_WORDS + 1);
   const selected = [];
@@ -107,7 +110,7 @@ function pickWords() {
   return selected;
 }
 
-// 7x6 boş grid ("" ile dolu)
+// Boş 7x6 grid
 function createEmptyGrid() {
   const grid = [];
   for (let r = 0; r < ROWS; r++) {
@@ -120,34 +123,29 @@ function createEmptyGrid() {
   return grid;
 }
 
-// Kelimeyi grid'e yerleştirmeyi dene
+// Kelimeyi grid'e yerleştir
 function placeWord(grid, word) {
   let placed = false;
   let attempts = 0;
-
   while (!placed && attempts < 100) {
     attempts++;
-    // Rastgele başlangıç
     const startRow = randInt(ROWS);
     const startCol = randInt(COLS);
-    // Rastgele yön
     const dir = DIRECTIONS[randInt(DIRECTIONS.length)];
 
-    // Uygun mu?
     if (canPlace(grid, word, startRow, startCol, dir)) {
       doPlace(grid, word, startRow, startCol, dir);
       placed = true;
     }
-    // Değilse tekrar dene
   }
 }
 
-// Bu pozisyona kelimeyi koymak mümkün mü?
+// Sığma ve çakışma kontrolü
 function canPlace(grid, word, startR, startC, dir) {
   const endR = startR + dir.dr * (word.length - 1);
   const endC = startC + dir.dc * (word.length - 1);
 
-  // Izgara dışına çıkıyor mu?
+  // Dışına çıkıyor mu?
   if (endR < 0 || endR >= ROWS) return false;
   if (endC < 0 || endC >= COLS) return false;
 
@@ -157,7 +155,6 @@ function canPlace(grid, word, startR, startC, dir) {
   for (let i = 0; i < word.length; i++) {
     const existing = grid[rr][cc];
     const letter = word[i];
-    // eğer bu hücre boşsa ya da harfler aynıysa yerleşebilir
     if (existing !== "" && existing !== letter) {
       return false;
     }
@@ -167,7 +164,7 @@ function canPlace(grid, word, startR, startC, dir) {
   return true;
 }
 
-// Kelimeyi yerleştir
+// Grid'e harfleri yaz
 function doPlace(grid, word, startR, startC, dir) {
   let rr = startR;
   let cc = startC;
@@ -178,7 +175,7 @@ function doPlace(grid, word, startR, startC, dir) {
   }
 }
 
-// Boş yerleri rastgele harfle doldur
+// Boş yerleri rastgele harf
 function fillBlanks(grid) {
   for (let r = 0; r < ROWS; r++) {
     for (let c = 0; c < COLS; c++) {
@@ -189,7 +186,7 @@ function fillBlanks(grid) {
   }
 }
 
-// Tek puzzle üret
+// Tek puzzle
 function generateOnePuzzle() {
   const grid = createEmptyGrid();
   const words = pickWords();
@@ -202,19 +199,18 @@ function generateOnePuzzle() {
   return { grid, words };
 }
 
-// Ana fonksiyon
 function main() {
   // Tek daily puzzle
   const daily = generateOnePuzzle();
 
-  // 50 adet zen puzzle
+  // 100 Zen puzzle
   const zenPuzzles = [];
   for (let i = 0; i < ZEN_COUNT; i++) {
-    const puzzle = generateOnePuzzle();
-    zenPuzzles.push(puzzle);
+    const p = generateOnePuzzle();
+    zenPuzzles.push(p);
   }
 
-  // Çıktı
+  // JSON
   const output = {
     dailyPuzzles: [
       {
@@ -228,11 +224,11 @@ function main() {
     zenPuzzles,
   };
 
-  // Kaydet
   const jsonStr = JSON.stringify(output, null, 2);
   fs.writeFileSync("puzzleData.json", jsonStr);
   console.log("puzzleData.json oluşturuldu!");
 }
 
 main();
+
 
