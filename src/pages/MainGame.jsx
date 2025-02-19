@@ -1,7 +1,6 @@
 import React, { useEffect, useState, useRef } from "react";
 import Header from "../components/Header";
 import WordGrid from "../components/WordGrid";
-import HintModal from "../components/HintModal";
 
 /**
  * Challenge aşamaları:
@@ -15,34 +14,36 @@ const challengeStages = [
   { time: 60, wordsNeeded: 5 },
   { time: 45, wordsNeeded: 6 },
   { time: 30, wordsNeeded: 7 },
-  { time: 15, wordsNeeded: 8 }
+  { time: 15, wordsNeeded: 8 },
 ];
 
 function MainGame() {
-  // İki mod: "zen" veya "challenge"
+  // "zen" veya "challenge" mod
   const [mode, setMode] = useState("zen");
 
-  // Puzzle verisi (Zen / Challenge)
+  // Puzzle verisi
   const [puzzle, setPuzzle] = useState(null);
   const [foundWords, setFoundWords] = useState([]);
   const [message, setMessage] = useState("");
   const [partialWord, setPartialWord] = useState("");
 
-  // Challenge state
+  // Challenge mod state
   const [currentStage, setCurrentStage] = useState(0);
   const [timeLeft, setTimeLeft] = useState(0);
   const [challengeComplete, setChallengeComplete] = useState(false);
   const [challengeFailed, setChallengeFailed] = useState(false);
 
+  // Timer ve puzzle listesi
   const timerRef = useRef(null);
   const [challengePuzzles, setChallengePuzzles] = useState([]);
   const [usedIndices, setUsedIndices] = useState([]);
 
+  // Mod değiştiğinde Zen veya Challenge puzzle yükle
   useEffect(() => {
     if (mode === "zen") {
       loadZenPuzzle();
     } else if (mode === "challenge") {
-      // challenge moduna ilk kez girince puzzle listesini çek
+      // Challenge mod: puzzleData.json içinden zenPuzzles çekip aşama başlat
       fetch("./puzzleData.json")
         .then((res) => {
           if (!res.ok) throw new Error("Puzzle data fetch failed.");
@@ -56,12 +57,13 @@ function MainGame() {
         .catch((err) => console.error(err));
     }
 
-    // Cleanup timer
+    // Temizlik
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
   }, [mode]);
 
+  // Zen puzzle'ı yükle
   const loadZenPuzzle = () => {
     fetch("./puzzleData.json")
       .then((res) => {
@@ -74,12 +76,13 @@ function MainGame() {
           const idx = Math.floor(Math.random() * zList.length);
           setPuzzle(zList[idx]);
         }
-        resetCommon();
+        resetCommonStates();
       })
       .catch((err) => console.error(err));
   };
 
-  const resetCommon = () => {
+  // Ortak state'leri sıfırla
+  const resetCommonStates = () => {
     setFoundWords([]);
     setMessage("");
     setPartialWord("");
@@ -87,22 +90,26 @@ function MainGame() {
     setChallengeFailed(false);
   };
 
-  // Challenge mod
+  // Challenge aşamasını başlat
   const startChallenge = (stageIndex, zList = []) => {
     if (timerRef.current) clearInterval(timerRef.current);
 
     setCurrentStage(stageIndex);
-    resetCommon();
+    resetCommonStates();
 
     if (zList.length === 0) {
       zList = challengePuzzles;
     }
+
+    // Rastgele puzzle seç
     const newPuzzle = pickNewPuzzle(zList);
     setPuzzle(newPuzzle);
 
+    // Aşamanın süresi
     const stageInfo = challengeStages[stageIndex];
     setTimeLeft(stageInfo.time);
 
+    // Timer
     timerRef.current = setInterval(() => {
       setTimeLeft((prev) => {
         if (prev <= 1) {
@@ -115,20 +122,25 @@ function MainGame() {
     }, 1000);
   };
 
-  // Rastgele puzzle seç
+  // Rastgele puzzle seç, daha önce kullanılmışları hariç
   const pickNewPuzzle = (zList) => {
     if (!zList.length) return null;
+    let available = zList
+      .map((_, i) => i)
+      .filter((i) => !usedIndices.includes(i));
 
-    let available = zList.map((_, i) => i).filter((i) => !usedIndices.includes(i));
     if (available.length === 0) {
+      // tüm puzzle'lar kullanıldıysa resetle
       setUsedIndices([]);
       available = zList.map((_, i) => i);
     }
+
     const randomIdx = available[Math.floor(Math.random() * available.length)];
     setUsedIndices((prev) => [...prev, randomIdx]);
     return zList[randomIdx];
   };
 
+  // Bir kelime bulunduğunda
   const handleWordFound = (word) => {
     if (foundWords.includes(word)) {
       setMessage("Already found!");
@@ -138,6 +150,7 @@ function MainGame() {
     }
   };
 
+  // Challenge modda, gerekli kelimeler bulundu mu kontrol
   useEffect(() => {
     if (mode !== "challenge") return;
     if (!puzzle) return;
@@ -146,31 +159,34 @@ function MainGame() {
     if (!stageInfo) return;
 
     if (foundWords.length >= stageInfo.wordsNeeded) {
-      // geç aşamaya
+      // Bir sonraki aşama
       if (currentStage < challengeStages.length - 1) {
         startChallenge(currentStage + 1);
       } else {
-        // son aşama
+        // son aşama da bitti
         handleChallengeComplete();
       }
     }
   }, [foundWords, puzzle, mode, currentStage]);
 
+  // Challenge tamam
   const handleChallengeComplete = () => {
     setChallengeComplete(true);
     if (timerRef.current) clearInterval(timerRef.current);
   };
 
+  // Challenge süre bitti vs.
   const handleChallengeFail = () => {
     setChallengeFailed(true);
   };
 
+  // Challenge "New Game"
   const handleNewChallengeGame = () => {
     startChallenge(0);
     setChallengeFailed(false);
   };
 
-  // Timer UI (challenge)
+  // Sayaç (challenge modda)
   let challengeTimerUI = null;
   if (mode === "challenge" && puzzle) {
     const mm = Math.floor(timeLeft / 60);
@@ -183,7 +199,7 @@ function MainGame() {
     );
   }
 
-  // Challenge popup
+  // Challenge pop-up'ları
   const challengePopups = (
     <>
       {challengeComplete && (
@@ -223,6 +239,7 @@ function MainGame() {
     </>
   );
 
+  // Puzzle henüz yoksa
   if (!puzzle && mode === "challenge") {
     return (
       <>
@@ -243,6 +260,7 @@ function MainGame() {
     );
   }
 
+  // Ana render
   return (
     <>
       <Header mode={mode} setMode={setMode} />
@@ -260,9 +278,41 @@ function MainGame() {
           />
         )}
 
-        {/* Zen alt kısım */}
+        {/* Zen mod alt kısmı */}
         {mode === "zen" && puzzle && (
-          <div classN
+          <div className="mt-4 flex flex-col items-center gap-2">
+            <p className="text-base text-brandSecondary min-h-[1.5rem]">
+              {message}
+            </p>
+            <p className="text-lg font-medium">
+              Found {foundWords.length} of {puzzle.words.length}
+            </p>
+          </div>
+        )}
+
+        {/* Challenge mod alt kısmı */}
+        {mode === "challenge" && puzzle && (
+          <div className="mt-4 flex flex-col items-center gap-2">
+            <p className="text-base text-brandSecondary min-h-[1.5rem]">
+              {message}
+            </p>
+            <p className="text-lg font-medium">
+              Found: {foundWords.length}
+            </p>
+            <p className="text-sm text-gray-500">
+              Need {challengeStages[currentStage].wordsNeeded} words
+            </p>
+          </div>
+        )}
+
+        {challengePopups}
+      </div>
+    </>
+  );
+}
+
+export default MainGame;
+
 
 
 
