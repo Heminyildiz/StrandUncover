@@ -9,7 +9,7 @@ import HintModal from "../components/HintModal";
  * - 2) 45 saniye, 6 kelime
  * - 3) 30 saniye, 7 kelime
  * - 4) 15 saniye, 8 kelime
- * Son aşamayı da bitirince: "Well Done! Massive Win"
+ * Son aşama bitince: "Well Done! Massive Win"
  */
 const challengeStages = [
   { time: 60, wordsNeeded: 5 },
@@ -19,37 +19,30 @@ const challengeStages = [
 ];
 
 function MainGame() {
-  // "daily" / "zen" / "challenge"
-  const [mode, setMode] = useState("daily");
+  // İki mod: "zen" veya "challenge"
+  const [mode, setMode] = useState("zen");
 
-  // Puzzle verisi (Daily / Zen / Challenge)
+  // Puzzle verisi (Zen / Challenge)
   const [puzzle, setPuzzle] = useState(null);
   const [foundWords, setFoundWords] = useState([]);
   const [message, setMessage] = useState("");
-  const [hintOpen, setHintOpen] = useState(false);
   const [partialWord, setPartialWord] = useState("");
 
-  // *** CHALLENGE Modu Durumları ***
-  const [currentStage, setCurrentStage] = useState(0);  // 0..3
+  // Challenge state
+  const [currentStage, setCurrentStage] = useState(0);
   const [timeLeft, setTimeLeft] = useState(0);
   const [challengeComplete, setChallengeComplete] = useState(false);
   const [challengeFailed, setChallengeFailed] = useState(false);
 
-  // Timer ref
   const timerRef = useRef(null);
-
-  // Eklendi: Challenge modunda kullanılacak puzzles ve usedIndices:
-  const [challengePuzzles, setChallengePuzzles] = useState([]); 
+  const [challengePuzzles, setChallengePuzzles] = useState([]);
   const [usedIndices, setUsedIndices] = useState([]);
 
   useEffect(() => {
-    if (mode === "daily") {
-      loadDailyPuzzle();
-    } else if (mode === "zen") {
+    if (mode === "zen") {
       loadZenPuzzle();
     } else if (mode === "challenge") {
-      // Challenge moduna ilk geçtiğimizde puzzle listesini çekelim
-      // (sadece bir kez çekeceğiz, startChallenge(0) içinde fetch yerine)
+      // challenge moduna ilk kez girince puzzle listesini çek
       fetch("./puzzleData.json")
         .then((res) => {
           if (!res.ok) throw new Error("Puzzle data fetch failed.");
@@ -57,37 +50,18 @@ function MainGame() {
         })
         .then((data) => {
           const zList = data.zenPuzzles || [];
-          setChallengePuzzles(zList);  // listemizi kaydedelim
-          // İlk aşamayı başlat
+          setChallengePuzzles(zList);
           startChallenge(0, zList);
         })
         .catch((err) => console.error(err));
     }
 
-    // Cleanup: Timer sıfırlama
+    // Cleanup timer
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode]);
 
-  // Daily puzzle yükle
-  const loadDailyPuzzle = () => {
-    fetch("./puzzleData.json")
-      .then((res) => {
-        if (!res.ok) throw new Error("Puzzle data fetch failed.");
-        return res.json();
-      })
-      .then((data) => {
-        const today = new Date().toISOString().split("T")[0];
-        const daily = data.dailyPuzzles.find((p) => p.date === today);
-        setPuzzle(daily || data.dailyPuzzles[0]);
-        resetCommonStates();
-      })
-      .catch((err) => console.error(err));
-  };
-
-  // Zen puzzle yükle
   const loadZenPuzzle = () => {
     fetch("./puzzleData.json")
       .then((res) => {
@@ -100,32 +74,32 @@ function MainGame() {
           const idx = Math.floor(Math.random() * zList.length);
           setPuzzle(zList[idx]);
         }
-        resetCommonStates();
+        resetCommon();
       })
       .catch((err) => console.error(err));
   };
 
-  /** Challenge modunu aşamaIndex'ten başlatır. 
-   * zList parametresi: challengePuzzles (zenPuzzles) 
-   */
+  const resetCommon = () => {
+    setFoundWords([]);
+    setMessage("");
+    setPartialWord("");
+    setChallengeComplete(false);
+    setChallengeFailed(false);
+  };
+
+  // Challenge mod
   const startChallenge = (stageIndex, zList = []) => {
-    // Timer temizliği
     if (timerRef.current) clearInterval(timerRef.current);
 
     setCurrentStage(stageIndex);
-    setChallengeComplete(false);
-    setChallengeFailed(false);
-    resetCommonStates();
+    resetCommon();
 
-    // Yeni puzzle seç
     if (zList.length === 0) {
-      // eğer henüz yoksa state'ten al
       zList = challengePuzzles;
     }
     const newPuzzle = pickNewPuzzle(zList);
     setPuzzle(newPuzzle);
 
-    // Aşamanın süresini timeLeft'e atayıp sayacı başlat
     const stageInfo = challengeStages[stageIndex];
     setTimeLeft(stageInfo.time);
 
@@ -141,41 +115,29 @@ function MainGame() {
     }, 1000);
   };
 
-  // Rastgele puzzle seçer, daha önce kullanılmamışsa ekliyoruz.
-  // Kullanılmamış puzzle kalmazsa usedIndices sıfırlanır (isteğe bağlı).
+  // Rastgele puzzle seç
   const pickNewPuzzle = (zList) => {
     if (!zList.length) return null;
 
-    let availableIndices = zList.map((_, i) => i).filter((i) => !usedIndices.includes(i));
-    if (availableIndices.length === 0) {
-      // Tükettiysek sıfırla
+    let available = zList.map((_, i) => i).filter((i) => !usedIndices.includes(i));
+    if (available.length === 0) {
       setUsedIndices([]);
-      availableIndices = zList.map((_, i) => i);
+      available = zList.map((_, i) => i);
     }
-    const randomIndex = availableIndices[Math.floor(Math.random() * availableIndices.length)];
-    setUsedIndices((prev) => [...prev, randomIndex]);
-    return zList[randomIndex];
+    const randomIdx = available[Math.floor(Math.random() * available.length)];
+    setUsedIndices((prev) => [...prev, randomIdx]);
+    return zList[randomIdx];
   };
 
-  // Common state'leri sıfırla
-  const resetCommonStates = () => {
-    setFoundWords([]);
-    setMessage("");
-    setHintOpen(false);
-    setPartialWord("");
-  };
-
-  // Kelime bulunması
   const handleWordFound = (word) => {
     if (foundWords.includes(word)) {
       setMessage("Already found!");
-      return;
+    } else {
+      setFoundWords([...foundWords, word]);
+      setMessage(`Found "${word}"!`);
     }
-    setFoundWords([...foundWords, word]);
-    setMessage(`Found "${word}"!`);
   };
 
-  // Challenge her buluş sonrası kelime kontrolü
   useEffect(() => {
     if (mode !== "challenge") return;
     if (!puzzle) return;
@@ -183,18 +145,16 @@ function MainGame() {
     const stageInfo = challengeStages[currentStage];
     if (!stageInfo) return;
 
-    // Gerekli kelime sayısı: stageInfo.wordsNeeded
     if (foundWords.length >= stageInfo.wordsNeeded) {
-      // Bu aşamayı bitirdik => sonraki aşamaya geç
+      // geç aşamaya
       if (currentStage < challengeStages.length - 1) {
         startChallenge(currentStage + 1);
       } else {
-        // Son aşamaydı
+        // son aşama
         handleChallengeComplete();
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [foundWords, puzzle]);
+  }, [foundWords, puzzle, mode, currentStage]);
 
   const handleChallengeComplete = () => {
     setChallengeComplete(true);
@@ -205,39 +165,39 @@ function MainGame() {
     setChallengeFailed(true);
   };
 
-  // "New Game" => tekrar en başa
   const handleNewChallengeGame = () => {
     startChallenge(0);
     setChallengeFailed(false);
   };
 
-  // Timer UI
-  const isChallenge = (mode === "challenge");
+  // Timer UI (challenge)
   let challengeTimerUI = null;
-  if (isChallenge && puzzle) {
+  if (mode === "challenge" && puzzle) {
     const mm = Math.floor(timeLeft / 60);
     const ss = timeLeft % 60;
     const timeStr = `${mm}:${ss < 10 ? "0" + ss : ss}`;
     challengeTimerUI = (
-      <div className="absolute top-0 right-0 mt-2 mr-2 bg-white px-2 py-1 rounded shadow-md text-brandRed font-bold">
+      <div className="absolute top-2 right-2 bg-white px-2 py-1 rounded shadow-md text-brandRed font-bold z-10">
         Time= {timeStr}
       </div>
     );
   }
 
-  // Challenge'ta pop-up
+  // Challenge popup
   const challengePopups = (
     <>
       {challengeComplete && (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
           <div className="bg-white p-4 rounded shadow-md text-center">
-            <h2 className="text-xl font-semibold mb-2">Well Done! Massive Win</h2>
+            <h2 className="text-xl font-semibold mb-2">
+              Well Done! Massive Win
+            </h2>
             <button
               onClick={() => {
                 setChallengeComplete(false);
-                setMode("daily");
+                setMode("zen");
               }}
-              className="px-4 py-1 bg-brandGreen text-white rounded"
+              className="px-4 py-2 bg-[#92555B] text-white rounded hover:opacity-80"
             >
               OK
             </button>
@@ -253,7 +213,7 @@ function MainGame() {
             </h2>
             <button
               onClick={handleNewChallengeGame}
-              className="px-4 py-1 bg-brandPrimary text-white rounded"
+              className="px-4 py-2 bg-[#92555B] text-white rounded hover:opacity-80"
             >
               New Game
             </button>
@@ -263,92 +223,47 @@ function MainGame() {
     </>
   );
 
-  // Puzzle yüklenmemiş (güncel mod "challenge" ama puzzle gelmemiş vs.)
-  if (mode !== "challenge" && !puzzle) {
+  if (!puzzle && mode === "challenge") {
     return (
-      <div>
+      <>
         <Header mode={mode} setMode={setMode} />
         <div className="flex items-center justify-center h-full p-6">
-          <p>Loading puzzle...</p>
+          <p>Loading challenge puzzle...</p>
         </div>
-      </div>
+      </>
+    );
+  } else if (!puzzle && mode === "zen") {
+    return (
+      <>
+        <Header mode={mode} setMode={setMode} />
+        <div className="flex items-center justify-center h-full p-6">
+          <p>Loading zen puzzle...</p>
+        </div>
+      </>
     );
   }
 
-  // Render
   return (
     <>
       <Header mode={mode} setMode={setMode} />
 
       <div className="container mx-auto p-4 flex flex-col items-center relative">
-        {/* Timer (challenge modunda) */}
         {challengeTimerUI}
 
         {/* Harf Izgarası */}
         {puzzle && (
           <WordGrid
             grid={puzzle.grid}
-            words={puzzle.words || []}
+            words={puzzle.words}
             onWordFound={handleWordFound}
             onPartialWordChange={setPartialWord}
           />
         )}
 
-        {/* Daily / Zen alt kısım */}
-        {mode !== "challenge" && puzzle && (
-          <div className="mt-4 flex flex-col items-center gap-2">
-            <p className="text-base text-brandSecondary min-h-[1.5rem]">
-              {message}
-            </p>
-            <p className="text-lg font-medium">
-              {foundWords.length} of {puzzle.words.length} found
-            </p>
+        {/* Zen alt kısım */}
+        {mode === "zen" && puzzle && (
+          <div classN
 
-            {/* Hint sadece Daily modda */}
-            {mode === "daily" && puzzle.hint && foundWords.length < puzzle.words.length && (
-              <button
-                onClick={() => setHintOpen(true)}
-                className="px-4 py-1 bg-brandPrimary text-white rounded hover:bg-brandSecondary transition"
-              >
-                Hint
-              </button>
-            )}
-          </div>
-        )}
-
-        {/* Challenge alt kısım */}
-        {mode === "challenge" && puzzle && (
-          <div className="mt-4 flex flex-col items-center gap-2">
-            <p className="text-base text-brandSecondary min-h-[1.5rem]">
-              {message}
-            </p>
-            <p className="text-lg font-medium">
-              Found: {foundWords.length}
-            </p>
-            {/* hangi aşamadayız? */}
-            <p className="text-sm text-gray-500">
-              Need {challengeStages[currentStage]?.wordsNeeded} words
-            </p>
-          </div>
-        )}
-
-        {/* Daily mod Hint Modal */}
-        {mode === "daily" && puzzle?.hint && (
-          <HintModal
-            isOpen={hintOpen}
-            hint={puzzle.hint}
-            onClose={() => setHintOpen(false)}
-          />
-        )}
-
-        {/* Challenge başarı / başarısız popup */}
-        {challengePopups}
-      </div>
-    </>
-  );
-}
-
-export default MainGame;
 
 
 
