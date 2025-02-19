@@ -1,33 +1,28 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState } from "react";
 
 const ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
-// Sadece son seçili harfin 8 komşusundan biri mi?
-function isNeighbor(last, next) {
-  const rowDiff = Math.abs(next.row - last.row);
-  const colDiff = Math.abs(next.col - last.col);
-  return rowDiff <= 1 && colDiff <= 1 && !(rowDiff === 0 && colDiff === 0);
+// 8 yönlü “komşu” kontrolü
+function isNeighbor(a, b) {
+  const rowDiff = Math.abs(a.row - b.row);
+  const colDiff = Math.abs(a.col - b.col);
+  // Kendisi değil ve fark <=1 => komşu
+  return !(rowDiff === 0 && colDiff === 0) && rowDiff <= 1 && colDiff <= 1;
 }
 
 function buildStringFromPath(path, grid) {
   return path.map((p) => grid[p.row][p.col]).join("");
 }
 
-function WordGrid({
-  grid: initialGrid,
-  words,
-  onWordFound,
-  onPartialWordChange
-}) {
+function WordGrid({ grid: initialGrid, words, onWordFound, onPartialWordChange }) {
   const [grid, setGrid] = useState([]);
   const [selectedPath, setSelectedPath] = useState([]);
   const [warning, setWarning] = useState("");
-  const pointerDownRef = useRef(false);
 
   useEffect(() => {
-    // Boş hücrelere ("" ya da " ") rastgele harf
-    const filled = initialGrid.map((row) =>
-      row.map((cell) => {
+    // Boş hücrelere random harf doldur
+    const filled = initialGrid.map(row =>
+      row.map(cell => {
         if (!cell || cell.trim() === "") {
           return ALPHABET[Math.floor(Math.random() * ALPHABET.length)];
         }
@@ -39,7 +34,7 @@ function WordGrid({
   }, [initialGrid]);
 
   useEffect(() => {
-    if (selectedPath.length === 0) {
+    if (!selectedPath.length) {
       onPartialWordChange?.("");
       return;
     }
@@ -55,49 +50,33 @@ function WordGrid({
     }
   }, [selectedPath, grid, onPartialWordChange]);
 
-  const handlePointerDown = (e) => {
-    e.preventDefault();
-    pointerDownRef.current = true;
-    setSelectedPath([]);
-  };
+  // Hücreye tıklayınca path'e ekle
+  const handleCellClick = (row, col) => {
+    // Zaten path'te var mı?
+    const alreadyInPath = selectedPath.some(p => p.row === row && p.col === col);
+    if (alreadyInPath) return; // Tekrar eklemeyelim
 
-  const handlePointerMove = (e) => {
-    if (!pointerDownRef.current) return;
-    e.preventDefault();
-
-    // Hangi hücreye geldik?
-    const target = e.target;
-    if (!target.dataset.row) return;
-
-    const row = parseInt(target.dataset.row, 10);
-    const col = parseInt(target.dataset.col, 10);
-
-    // Path'te zaten var mı?
-    const exists = selectedPath.some((p) => p.row === row && p.col === col);
-    if (exists) return;
-
-    // İlk hücreyse direkt ekle
+    // Path boşsa direkt ekle
     if (selectedPath.length === 0) {
       setSelectedPath([{ row, col }]);
-    } else {
-      // Sondaki hücreye komşu mu?
-      const lastCell = selectedPath[selectedPath.length - 1];
-      if (isNeighbor(lastCell, { row, col })) {
-        if (selectedPath.length < 10) {
-          setSelectedPath((prev) => [...prev, { row, col }]);
-        }
+      return;
+    }
+    // Değilse, son seçili hücreye komşu mu?
+    const lastCell = selectedPath[selectedPath.length - 1];
+    if (isNeighbor(lastCell, { row, col })) {
+      if (selectedPath.length < 10) {
+        setSelectedPath([...selectedPath, { row, col }]);
       }
     }
   };
 
-  const handlePointerUp = (e) => {
-    e.preventDefault();
-    pointerDownRef.current = false;
+  // Seçim bitti sayılır -> kelime var mı kontrol
+  const finalizeSelection = () => {
     if (selectedPath.length > 0 && selectedPath.length <= 10) {
       const selectedWord = buildStringFromPath(selectedPath, grid);
       const reversed = selectedWord.split("").reverse().join("");
       const found = words.find(
-        (w) => w.toUpperCase() === selectedWord || w.toUpperCase() === reversed
+        w => w.toUpperCase() === selectedWord || w.toUpperCase() === reversed
       );
       if (found) {
         onWordFound?.(found.toUpperCase());
@@ -112,41 +91,40 @@ function WordGrid({
   };
 
   return (
-    <div className="relative w-full flex justify-center mt-4">
+    <div className="relative w-full flex flex-col items-center mt-4">
       {warning && (
         <div className="absolute top-0 bg-brandRed text-white px-2 py-1 rounded">
           {warning}
         </div>
       )}
 
-      <div
-        className="grid grid-rows-7 grid-cols-6 gap-1 p-1"
-        style={{ touchAction: "none" }}
-        onPointerDown={handlePointerDown}
-        onPointerMove={handlePointerMove}
-        onPointerUp={handlePointerUp}
-      >
+      {/* 
+        GRID 7x6 
+        Tıklandığında handleCellClick => path'e ekle 
+        finalizeSelection butonu => kelime kontrol
+      */}
+      <div className="grid grid-rows-7 grid-cols-6 gap-1 p-1">
         {grid.map((rowArray, rowIndex) =>
           rowArray.map((letter, colIndex) => {
             const isSelected = selectedPath.some(
-              (p) => p.row === rowIndex && p.col === colIndex
+              p => p.row === rowIndex && p.col === colIndex
             );
+            const cellCls = `
+              w-12 h-12 md:w-14 md:h-14
+              flex items-center justify-center
+              text-lg md:text-xl font-bold
+              cursor-pointer select-none
+              ${
+                isSelected
+                  ? "bg-[#bfdc80] text-black"
+                  : "bg-white text-gray-900"
+              }
+            `;
             return (
               <div
-                key={`${rowIndex},${colIndex}`}
-                data-row={rowIndex}
-                data-col={colIndex}
-                className={`
-                  w-12 h-12 md:w-14 md:h-14 
-                  flex items-center justify-center 
-                  text-lg md:text-xl font-bold 
-                  cursor-pointer select-none
-                  ${
-                    isSelected
-                      ? "bg-[#bfdc80] text-black"
-                      : "bg-white text-gray-900"
-                  }
-                `}
+                key={`${rowIndex}-${colIndex}`}
+                onClick={() => handleCellClick(rowIndex, colIndex)}
+                className={cellCls}
               >
                 {letter}
               </div>
@@ -154,11 +132,20 @@ function WordGrid({
           })
         )}
       </div>
+
+      {/* Buton: finalize selection */}
+      <button
+        onClick={finalizeSelection}
+        className="mt-3 px-4 py-2 bg-[#92555B] text-white rounded hover:opacity-80"
+      >
+        Confirm Word
+      </button>
     </div>
   );
 }
 
 export default WordGrid;
+
 
 
 
