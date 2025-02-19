@@ -3,30 +3,28 @@ import React, { useEffect, useState } from "react";
 const ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
 /**
- * Komşu mu? (8 yön)
+ * 8 yönlü "komşu" check
  */
 function isNeighbor(a, b) {
   const rowDiff = Math.abs(a.row - b.row);
   const colDiff = Math.abs(a.col - b.col);
-  if (rowDiff === 0 && colDiff === 0) return false; // aynı hücre
+  if (rowDiff === 0 && colDiff === 0) return false; 
   return rowDiff <= 1 && colDiff <= 1;
 }
 
 /**
- * Yönü (dr, dc) bul, normalleştirmeye gerek yok, 
- * ama 8 yön olduğu için -1..1 arası
+ * Yön bulma
  */
 function getDirection(a, b) {
   return { dr: b.row - a.row, dc: b.col - a.col };
 }
 
 /**
- * 2 consecutive pairs => compare direction 
- * eğer direction != bir önceki direction => directionChangeCount++
- * directionChangeCount > 1 => return false
+ * checkShapeAllowed => path'te directionChange=0 (hiç dönüş yok)
+ * => düz çizgi
  */
 function checkShapeAllowed(path) {
-  if (path.length < 2) return true; // tek hücre veya nokta => ok
+  if (path.length < 2) return true; // tek hücre => ok
 
   let directionChangeCount = 0;
   let prevDir = null;
@@ -34,26 +32,25 @@ function checkShapeAllowed(path) {
   for (let i = 1; i < path.length; i++) {
     const dir = getDirection(path[i - 1], path[i]);
     if (i === 1) {
-      // ilk segment
       prevDir = dir;
       continue;
     } else {
       // sonraki segment
       if (dir.dr !== prevDir.dr || dir.dc !== prevDir.dc) {
-        // yön değişti
+        // yön değişti => “L” shape
         directionChangeCount++;
-        if (directionChangeCount > 1) {
-          return false; // 2'den fazla dönüş => Z, S vb.
+        if (directionChangeCount > 0) {
+          // 0'dan fazla => red
+          return false;
         }
-        prevDir = dir; // yeni direction
+        prevDir = dir;
       }
     }
   }
 
-  return true; // 0 veya 1 dönüş => L, düz çizgi, diag
+  return true; // 0 change => düz çizgi (yatay, dikey, diagonal)
 }
 
-/** Path => string */
 function buildStringFromPath(path, grid) {
   return path.map((p) => grid[p.row][p.col]).join("");
 }
@@ -63,7 +60,7 @@ function WordGrid({ grid: initialGrid, words, onWordFound, onPartialWordChange }
   const [selectedPath, setSelectedPath] = useState([]);
   const [warning, setWarning] = useState("");
 
-  // Boş hücreye random harf
+  // Boş hücreleri random harf
   useEffect(() => {
     const filled = initialGrid.map((row) =>
       row.map((cell) => {
@@ -95,11 +92,12 @@ function WordGrid({ grid: initialGrid, words, onWordFound, onPartialWordChange }
     }
   }, [selectedPath, grid, onPartialWordChange]);
 
+  // Toggle cell
   const handleCellClick = (row, col) => {
-    // Toggle?
+    // Zaten path'te mi?
     const existingIndex = selectedPath.findIndex((p) => p.row === row && p.col === col);
     if (existingIndex !== -1) {
-      // Seçimi kaldır
+      // path'ten çıkar
       setSelectedPath((prev) => {
         const newPath = [...prev];
         newPath.splice(existingIndex, 1);
@@ -108,7 +106,7 @@ function WordGrid({ grid: initialGrid, words, onWordFound, onPartialWordChange }
       return;
     }
 
-    // Yeni hücre ekleme
+    // Yeni hücre ekle
     if (selectedPath.length === 0) {
       // path boşsa direkt ekle
       setSelectedPath([{ row, col }]);
@@ -117,11 +115,10 @@ function WordGrid({ grid: initialGrid, words, onWordFound, onPartialWordChange }
       const lastCell = selectedPath[selectedPath.length - 1];
       if (!isNeighbor(lastCell, { row, col })) return;
 
-      // önce path'e ekleyelim, sonra shape check
       const newPath = [...selectedPath, { row, col }];
+      // check shape
       if (!checkShapeAllowed(newPath)) {
-        // L, düz veya diag değil => reddet
-        return;
+        return; // düz çizgi değil => reddet
       }
 
       if (newPath.length <= 10) {
@@ -130,13 +127,12 @@ function WordGrid({ grid: initialGrid, words, onWordFound, onPartialWordChange }
     }
   };
 
-  // Kelime finalize
   const finalizeSelection = () => {
     if (selectedPath.length > 0 && selectedPath.length <= 10) {
-      const selWord = buildStringFromPath(selectedPath, grid);
-      const reversed = selWord.split("").reverse().join("");
+      const selectedWord = buildStringFromPath(selectedPath, grid);
+      // YALNIZCA normal yön => ters yok
       const found = words.find(
-        (w) => w.toUpperCase() === selWord || w.toUpperCase() === reversed
+        (w) => w.toUpperCase() === selectedWord
       );
       if (found) {
         onWordFound?.(found.toUpperCase());
@@ -194,6 +190,7 @@ function WordGrid({ grid: initialGrid, words, onWordFound, onPartialWordChange }
 }
 
 export default WordGrid;
+
 
 
 
