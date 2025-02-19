@@ -11,14 +11,13 @@ const challengeStages = [
 ];
 
 function MainGame() {
-  // "zen" veya "challenge"
   const [mode, setMode] = useState("zen");
   const [puzzle, setPuzzle] = useState(null);
   const [foundWords, setFoundWords] = useState([]);
   const [message, setMessage] = useState("");
   const [partialWord, setPartialWord] = useState("");
 
-  // Zen mod için Hint butonu
+  // Zen Hint
   const [zenHintUsed, setZenHintUsed] = useState(false);
 
   // Challenge
@@ -28,22 +27,24 @@ function MainGame() {
   const [challengeFailed, setChallengeFailed] = useState(false);
   const timerRef = useRef(null);
 
-  const [challengePuzzles, setChallengePuzzles] = useState([]);
-  const [usedIndices, setUsedIndices] = useState([]);
+  // Challenge puzzle list
+  const [challengeList, setChallengeList] = useState([]);
 
-  // Puzzle yükleme
+  // LOADING puzzleData
   useEffect(() => {
     if (mode === "zen") {
       loadZenPuzzle();
     } else if (mode === "challenge") {
       fetch("./puzzleData.json")
         .then((res) => {
-          if (!res.ok) throw new Error("Puzzle data fetch failed.");
+          if (!res.ok) throw new Error("puzzleData fetch failed");
           return res.json();
         })
         .then((data) => {
+          // Tüm zenPuzzles'ı challenge için de kullanacağız
           const zList = data.zenPuzzles || [];
-          setChallengePuzzles(zList);
+          setChallengeList(zList);
+          // Her challenge mod girişinde puzzle SIFIRdan random
           startChallenge(0, zList);
         })
         .catch((err) => console.error(err));
@@ -57,12 +58,13 @@ function MainGame() {
   const loadZenPuzzle = () => {
     fetch("./puzzleData.json")
       .then((res) => {
-        if (!res.ok) throw new Error("Puzzle data fetch failed.");
+        if (!res.ok) throw new Error("puzzleData fetch failed");
         return res.json();
       })
       .then((data) => {
         const zList = data.zenPuzzles || [];
         if (zList.length > 0) {
+          // Rastgele puzzle
           const idx = Math.floor(Math.random() * zList.length);
           setPuzzle(zList[idx]);
         }
@@ -71,32 +73,34 @@ function MainGame() {
       .catch((err) => console.error(err));
   };
 
+  // Common reset
   const resetCommonStates = () => {
     setFoundWords([]);
     setMessage("");
     setPartialWord("");
     setChallengeComplete(false);
     setChallengeFailed(false);
-
-    // Zen Hint, her yeni puzzle geldiğinde sıfırlansın.
     setZenHintUsed(false);
   };
 
-  // Challenge
-  const startChallenge = (stageIndex, zList = []) => {
+  // startChallenge => her seferinde puzzle random
+  const startChallenge = (stageIndex, zList) => {
     if (timerRef.current) clearInterval(timerRef.current);
 
-    setCurrentStage(stageIndex);
     resetCommonStates();
+    setCurrentStage(stageIndex);
 
     if (zList.length === 0) {
-      zList = challengePuzzles;
+      // fallback, normalde zList gelmeli
+      return;
     }
-    const newPuzzle = pickNewPuzzle(zList);
-    setPuzzle(newPuzzle);
+    // Rastgele puzzle
+    const puzzleIndex = Math.floor(Math.random() * zList.length);
+    setPuzzle(zList[puzzleIndex]);
 
-    const stageInfo = challengeStages[stageIndex];
-    setTimeLeft(stageInfo.time);
+    // Timer
+    const stage = challengeStages[stageIndex];
+    setTimeLeft(stage.time);
 
     timerRef.current = setInterval(() => {
       setTimeLeft((prev) => {
@@ -110,22 +114,7 @@ function MainGame() {
     }, 1000);
   };
 
-  const pickNewPuzzle = (zList) => {
-    if (!zList.length) return null;
-    let available = zList
-      .map((_, i) => i)
-      .filter((i) => !usedIndices.includes(i));
-
-    if (available.length === 0) {
-      setUsedIndices([]);
-      available = zList.map((_, i) => i);
-    }
-
-    const randomIdx = available[Math.floor(Math.random() * available.length)];
-    setUsedIndices((prev) => [...prev, randomIdx]);
-    return zList[randomIdx];
-  };
-
+  // Bulunan kelime
   const handleWordFound = (word) => {
     if (foundWords.includes(word)) {
       setMessage("Already found!");
@@ -135,21 +124,23 @@ function MainGame() {
     }
   };
 
-  // Challenge => yeterli kelime bulunmuş mu?
+  // Her bulduğumuzda kelime count'u kontrol et
   useEffect(() => {
-    if (mode !== "challenge" || !puzzle) return;
+    if (mode !== "challenge") return;
+    if (!puzzle) return;
 
-    const stageInfo = challengeStages[currentStage];
-    if (!stageInfo) return;
+    const stage = challengeStages[currentStage];
+    if (!stage) return;
 
-    if (foundWords.length >= stageInfo.wordsNeeded) {
+    if (foundWords.length >= stage.wordsNeeded) {
+      // Next stage
       if (currentStage < challengeStages.length - 1) {
-        startChallenge(currentStage + 1);
+        startChallenge(currentStage + 1, challengeList);
       } else {
         handleChallengeComplete();
       }
     }
-  }, [foundWords, puzzle, mode, currentStage]);
+  }, [foundWords, puzzle, mode, currentStage, challengeList]);
 
   const handleChallengeComplete = () => {
     setChallengeComplete(true);
@@ -161,24 +152,24 @@ function MainGame() {
   };
 
   const handleNewChallengeGame = () => {
-    startChallenge(0);
+    startChallenge(0, challengeList);
     setChallengeFailed(false);
   };
 
-  // Time sayacı
+  // Timer konumu => "Top-right corner a bit above"
+  // => .relative parent => we'll put top negative margin
   let challengeTimerUI = null;
   if (mode === "challenge" && puzzle) {
     const mm = Math.floor(timeLeft / 60);
     const ss = timeLeft % 60;
     const timeStr = `${mm}:${ss < 10 ? "0" + ss : ss}`;
 
-    // Daha aşağı al, bold, text #92555B
     challengeTimerUI = (
       <div
         className="
           absolute
-          top-6  /* biraz daha aşağı */
-          right-0
+          top-[-1.5rem]
+          right-[0.5rem]
           text-[#92555B]
           font-bold
           z-10
@@ -189,27 +180,23 @@ function MainGame() {
     );
   }
 
-  // Zen'de Hint butonu
+  // Zen Hint
   const handleZenHint = () => {
     if (!puzzle) return;
-    // Bulunmamış kelimeleri listele
     const notFound = puzzle.words.filter(
       (w) => !foundWords.includes(w.toUpperCase())
     );
     if (notFound.length === 0) {
-      // Tüm kelimeler bulunmuş, ipucu gerek yok
       setMessage("All words found!");
       return;
     }
-    // Rastgele bir kelime seç
     const randomWord = notFound[Math.floor(Math.random() * notFound.length)];
-    // İlk harf
     const firstLetter = randomWord[0].toUpperCase();
     setMessage(`Hint: The first letter is "${firstLetter}".`);
     setZenHintUsed(true);
   };
 
-  // Challenge popups
+  // Popups
   const challengePopups = (
     <>
       {challengeComplete && (
@@ -272,24 +259,22 @@ function MainGame() {
   return (
     <>
       <Header mode={mode} setMode={setMode} />
-
-      {/* Timer ve ızgara */}
       <div className="container mx-auto p-4 flex flex-col items-center">
+        {/* Kelime ızgarası + Timer => relative */}
         <div className="relative">
           {challengeTimerUI}
-
+          {/* Harf Izgarası */}
           {puzzle && (
             <WordGrid
               grid={puzzle.grid}
               words={puzzle.words}
               onWordFound={handleWordFound}
-              onPartialWordChange={setPartialWord}
+              onPartialWordChange={(pw) => setPartialWord(pw)}
             />
           )}
         </div>
 
-        {/* Zen alt kısım: Confirm Word butonu WordGrid'de
-            Hint butonu burada */}
+        {/* Zen alt kısım */}
         {mode === "zen" && puzzle && (
           <div className="mt-4 flex flex-col items-center gap-2">
             <p className="text-base text-brandSecondary min-h-[1.5rem]">
@@ -317,20 +302,20 @@ function MainGame() {
               {message}
             </p>
             <p className="text-lg font-medium">
-              Found: {foundWords.length}
+              Found {foundWords.length}
             </p>
           </div>
         )}
       </div>
 
       {challengePopups}
-
       <Footer />
     </>
   );
 }
 
 export default MainGame;
+
 
 
 
