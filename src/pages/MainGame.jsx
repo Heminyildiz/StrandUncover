@@ -2,15 +2,16 @@ import React, { useEffect, useState, useRef } from "react";
 import Header from "../components/Header";
 import WordGrid from "../components/WordGrid";
 
+// Challenge mod aşamaları
 const challengeStages = [
   { time: 60, wordsNeeded: 5 },
   { time: 45, wordsNeeded: 6 },
   { time: 30, wordsNeeded: 7 },
-  { time: 15, wordsNeeded: 8 }
+  { time: 15, wordsNeeded: 8 },
 ];
 
 function MainGame() {
-  const [mode, setMode] = useState("zen");
+  const [mode, setMode] = useState("zen");          // "zen" veya "challenge"
   const [puzzle, setPuzzle] = useState(null);
   const [foundWords, setFoundWords] = useState([]);
   const [message, setMessage] = useState("");
@@ -26,6 +27,7 @@ function MainGame() {
   const [challengePuzzles, setChallengePuzzles] = useState([]);
   const [usedIndices, setUsedIndices] = useState([]);
 
+  // Mod değişince puzzle yükle
   useEffect(() => {
     if (mode === "zen") {
       loadZenPuzzle();
@@ -42,6 +44,8 @@ function MainGame() {
         })
         .catch((err) => console.error(err));
     }
+
+    // Cleanup
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
@@ -99,6 +103,7 @@ function MainGame() {
     }, 1000);
   };
 
+  // Rastgele puzzle seç
   const pickNewPuzzle = (zList) => {
     if (!zList.length) return null;
     let available = zList
@@ -124,9 +129,9 @@ function MainGame() {
     }
   };
 
+  // Challenge: Kelime sayısı yeterli mi kontrol
   useEffect(() => {
-    if (mode !== "challenge") return;
-    if (!puzzle) return;
+    if (mode !== "challenge" || !puzzle) return;
 
     const stageInfo = challengeStages[currentStage];
     if (!stageInfo) return;
@@ -154,30 +159,35 @@ function MainGame() {
     setChallengeFailed(false);
   };
 
-  // Time sayacını daha estetik ve ızgaradan uzak yapalım.
+  // Time sayacı: "Time: mm:ss" format, şeffaf, text #92555B
+  // Pozisyon => harf ızgarasının sağ üst köşesindeki harfin biraz üzerinde
+  // Bunu WordGrid'in relative container'ında konumlandırmak istiyoruz
+  // => Yine MainGame'de, WordGrid ile aynı "container" vs. plan.
+  // Basit yaklaşım: top-2 right-0 => margin ayarla.
+
   let challengeTimerUI = null;
   if (mode === "challenge" && puzzle) {
     const mm = Math.floor(timeLeft / 60);
     const ss = timeLeft % 60;
     const timeStr = `${mm}:${ss < 10 ? "0" + ss : ss}`;
 
-    // Daha şık tasarım: gradient, yuvarlak, ızgaradan uzak
     challengeTimerUI = (
-      <div className="
-        absolute 
-        top-16 right-2
-        bg-gradient-to-r from-[#92555B] to-[#BB848A]
-        text-white font-bold
-        px-4 py-2
-        rounded-full
-        shadow-md
-        z-10
-      ">
-        Time = {timeStr}
+      <div
+        className="
+          absolute
+          top-[-1.5rem]
+          right-0
+          text-[#92555B]
+          font-bold
+          z-10
+        "
+      >
+        Time: {timeStr}
       </div>
     );
   }
 
+  // Challenge popups
   const challengePopups = (
     <>
       {challengeComplete && (
@@ -217,6 +227,7 @@ function MainGame() {
     </>
   );
 
+  // Henüz puzzle yoksa
   if (!puzzle && mode === "challenge") {
     return (
       <>
@@ -237,22 +248,33 @@ function MainGame() {
     );
   }
 
+  // Render
   return (
     <>
       <Header mode={mode} setMode={setMode} />
 
-      <div className="container mx-auto p-4 flex flex-col items-center relative">
-        {challengeTimerUI}
+      {/* 
+        Kapsayıcı div -> "relative" 
+        WordGrid => "relative" 
+        Timer'ı orada konumlandıracağız 
+      */}
+      <div className="container mx-auto p-4 flex flex-col items-center">
+        {/* WordGrid konteyneri, timer'ı gridin içine konumlandırmak için relative */}
+        <div className="relative">
+          {challengeTimerUI}
 
-        {puzzle && (
-          <WordGrid
-            grid={puzzle.grid}
-            words={puzzle.words}
-            onWordFound={handleWordFound}
-            onPartialWordChange={setPartialWord}
-          />
-        )}
+          {/* Harf Izgarası */}
+          {puzzle && (
+            <WordGrid
+              grid={puzzle.grid}
+              words={puzzle.words}
+              onWordFound={handleWordFound}
+              onPartialWordChange={setPartialWord}
+            />
+          )}
+        </div>
 
+        {/* Zen alt kısım */}
         {mode === "zen" && puzzle && (
           <div className="mt-4 flex flex-col items-center gap-2">
             <p className="text-base text-brandSecondary min-h-[1.5rem]">
@@ -264,6 +286,7 @@ function MainGame() {
           </div>
         )}
 
+        {/* Challenge alt kısım */}
         {mode === "challenge" && puzzle && (
           <div className="mt-4 flex flex-col items-center gap-2">
             <p className="text-base text-brandSecondary min-h-[1.5rem]">
@@ -277,14 +300,15 @@ function MainGame() {
             </p>
           </div>
         )}
-
-        {challengePopups}
       </div>
+
+      {challengePopups}
     </>
   );
 }
 
 export default MainGame;
+
 
 
 
