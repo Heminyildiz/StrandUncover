@@ -3,6 +3,9 @@ import Header from "../components/Header";
 import Footer from "../components/Footer";
 import WordGrid from "../components/WordGrid";
 
+/**
+ * Challenge aşamaları
+ */
 const challengeStages = [
   { time: 60, wordsNeeded: 5 },
   { time: 45, wordsNeeded: 6 },
@@ -17,7 +20,7 @@ function MainGame() {
   const [message, setMessage] = useState("");
   const [partialWord, setPartialWord] = useState("");
 
-  // Zen Hint
+  // Zen Hint butonu
   const [zenHintUsed, setZenHintUsed] = useState(false);
 
   // Challenge
@@ -27,10 +30,10 @@ function MainGame() {
   const [challengeFailed, setChallengeFailed] = useState(false);
   const timerRef = useRef(null);
 
-  // Challenge puzzle list
+  // Challenge puzzle listesi
   const [challengeList, setChallengeList] = useState([]);
 
-  // LOADING puzzleData
+  // Mod değiştikçe puzzle yükle
   useEffect(() => {
     if (mode === "zen") {
       loadZenPuzzle();
@@ -41,10 +44,8 @@ function MainGame() {
           return res.json();
         })
         .then((data) => {
-          // Tüm zenPuzzles'ı challenge için de kullanacağız
           const zList = data.zenPuzzles || [];
           setChallengeList(zList);
-          // Her challenge mod girişinde puzzle SIFIRdan random
           startChallenge(0, zList);
         })
         .catch((err) => console.error(err));
@@ -64,7 +65,6 @@ function MainGame() {
       .then((data) => {
         const zList = data.zenPuzzles || [];
         if (zList.length > 0) {
-          // Rastgele puzzle
           const idx = Math.floor(Math.random() * zList.length);
           setPuzzle(zList[idx]);
         }
@@ -73,27 +73,23 @@ function MainGame() {
       .catch((err) => console.error(err));
   };
 
-  // Common reset
   const resetCommonStates = () => {
     setFoundWords([]);
     setMessage("");
     setPartialWord("");
     setChallengeComplete(false);
     setChallengeFailed(false);
-    setZenHintUsed(false);
+    setZenHintUsed(false); // her puzzle değişiminde ipucu sıfırlansın
   };
 
-  // startChallenge => her seferinde puzzle random
+  // Challenge mod
   const startChallenge = (stageIndex, zList) => {
     if (timerRef.current) clearInterval(timerRef.current);
 
     resetCommonStates();
     setCurrentStage(stageIndex);
 
-    if (zList.length === 0) {
-      // fallback, normalde zList gelmeli
-      return;
-    }
+    if (!zList || !zList.length) return; 
     // Rastgele puzzle
     const puzzleIndex = Math.floor(Math.random() * zList.length);
     setPuzzle(zList[puzzleIndex]);
@@ -114,7 +110,6 @@ function MainGame() {
     }, 1000);
   };
 
-  // Bulunan kelime
   const handleWordFound = (word) => {
     if (foundWords.includes(word)) {
       setMessage("Already found!");
@@ -124,16 +119,14 @@ function MainGame() {
     }
   };
 
-  // Her bulduğumuzda kelime count'u kontrol et
+  // Kelime sayısı yeterli mi?
   useEffect(() => {
-    if (mode !== "challenge") return;
-    if (!puzzle) return;
+    if (mode !== "challenge" || !puzzle) return;
 
     const stage = challengeStages[currentStage];
     if (!stage) return;
 
     if (foundWords.length >= stage.wordsNeeded) {
-      // Next stage
       if (currentStage < challengeStages.length - 1) {
         startChallenge(currentStage + 1, challengeList);
       } else {
@@ -156,8 +149,7 @@ function MainGame() {
     setChallengeFailed(false);
   };
 
-  // Timer konumu => "Top-right corner a bit above"
-  // => .relative parent => we'll put top negative margin
+  // Timer => top-8 => biraz daha aşağı
   let challengeTimerUI = null;
   if (mode === "challenge" && puzzle) {
     const mm = Math.floor(timeLeft / 60);
@@ -168,8 +160,8 @@ function MainGame() {
       <div
         className="
           absolute
-          top-[-1.5rem]
-          right-[0.5rem]
+          top-8
+          right-0
           text-[#92555B]
           font-bold
           z-10
@@ -259,11 +251,10 @@ function MainGame() {
   return (
     <>
       <Header mode={mode} setMode={setMode} />
+
       <div className="container mx-auto p-4 flex flex-col items-center">
-        {/* Kelime ızgarası + Timer => relative */}
         <div className="relative">
           {challengeTimerUI}
-          {/* Harf Izgarası */}
           {puzzle && (
             <WordGrid
               grid={puzzle.grid}
@@ -283,7 +274,6 @@ function MainGame() {
             <p className="text-lg font-medium">
               Found {foundWords.length} of {puzzle.words.length}
             </p>
-            {/* Hint Butonu */}
             {!zenHintUsed && (
               <button
                 onClick={handleZenHint}
@@ -315,6 +305,7 @@ function MainGame() {
 }
 
 export default MainGame;
+
 
 
 
